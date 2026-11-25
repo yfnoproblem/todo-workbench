@@ -11,7 +11,7 @@ from datetime import date, datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-ROOT = "/Users/galigali/Documents/Codex/2026-05-14/new-chat"
+ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(ROOT, ".todo-data.json")
 DATA_HISTORY_DIR = os.path.join(ROOT, ".todo-data-history")
 ISSUE_ASSET_DIR = os.path.join(ROOT, "issue-assets")
@@ -260,6 +260,9 @@ def _parse_lark_cli_json(output):
         raise
 
 
+MAX_REQUEST_BYTES = 25 * 1024 * 1024
+
+
 class TodoHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=ROOT, **kwargs)
@@ -271,6 +274,30 @@ class TodoHandler(SimpleHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def _read_json_body(self, max_bytes=MAX_REQUEST_BYTES):
+        raw_length = self.headers.get("Content-Length", "0")
+        try:
+            length = int(raw_length)
+        except ValueError:
+            self._send_json(400, {"error": "Invalid Content-Length header."})
+            return None
+        if length < 0:
+            self._send_json(400, {"error": "Invalid Content-Length header."})
+            return None
+        if length > max_bytes:
+            self._send_json(413, {"error": "Request payload too large."})
+            return None
+        try:
+            raw = self.rfile.read(length) if length else b"{}"
+            payload = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            self._send_json(400, {"error": "Invalid JSON body."})
+            return None
+        if not isinstance(payload, dict):
+            self._send_json(400, {"error": "JSON body must be an object."})
+            return None
+        return payload
 
     def do_GET(self):
         parsed = urlparse(self.path)
@@ -298,17 +325,21 @@ class TodoHandler(SimpleHTTPRequestHandler):
                     cwd=ROOT,
                     capture_output=True,
                     text=True,
+                    encoding="utf-8",
+                    errors="replace",
                     timeout=20,
                 )
                 output = "\n".join(part for part in [result.stdout, result.stderr] if part).strip()
                 payload = _parse_lark_cli_json(output) if output else {}
                 if result.returncode != 0 or payload.get("ok") is False:
+                    err_val = payload.get("error")
+                    err_obj = err_val if isinstance(err_val, dict) else {}
                     self._send_json(200, {
                         "ok": False,
                         "date": target_date,
                         "events": [],
-                        "error": payload.get("error", {}).get("message") or payload.get("error") or output or "Failed to load Lark calendar.",
-                        "hint": payload.get("error", {}).get("hint", ""),
+                        "error": err_obj.get("message") or (err_val if isinstance(err_val, str) else None) or output or "Failed to load Lark calendar.",
+                        "hint": err_obj.get("hint", ""),
                         "notice": payload.get("_notice", {}),
                     })
                     return
@@ -341,11 +372,16 @@ class TodoHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self):
-        if self.path == "/api/issue-assets":
-            length = int(self.headers.get("Content-Length", "0"))
+        parsed_path = urlparse(self.path).path
+        if parsed_path == "/api/issue-assets":
+            payload = self._read_json_body(max_bytes=16 * 1024 * 1024)
+            if payload is None:
+                return
             try:
-                payload = json.loads(self.rfile.read(length).decode("utf-8"))
                 data_url = payload.get("dataUrl", "")
+                if not isinstance(data_url, str):
+                    self._send_json(400, {"error": "Invalid dataUrl."})
+                    return
                 match = re.match(r"^data:image/([a-zA-Z0-9.+-]+);base64,(.+)$", data_url)
                 if not match:
                     self._send_json(400, {"error": "Only base64 image data URLs are supported."})
@@ -353,24 +389,41 @@ class TodoHandler(SimpleHTTPRequestHandler):
 
                 extension = match.group(1).lower().replace("jpeg", "jpg")
                 if extension not in {"png", "jpg", "gif", "webp"}:
-                    extension = "png"
-                safe_stem = re.sub(r"[^a-zA-Z0-9_-]+", "-", os.path.splitext(payload.get("filename", "screenshot"))[0]).strip("-") or "screenshot"
-                filename = f"{safe_stem}-{payload.get('id', '')}.{extension}" if payload.get("id") else f"{safe_stem}.{extension}"
-                filename = re.sub(r"[^a-zA-Z0-9_.-]+", "-", filename)
+                    self._send_json(400, {"error": "Unsupported image format."})
+                    return
+
+                try:
+                    raw_bytes = base64.b64decode(match.group(2), validate=True)
+                except Exception:
+                    self._send_json(400, {"error": "Invalid base64 image data."})
+                    return
+
+                safe_stem = re.sub(r"[^a-zA-Z0-9_-]+", "-", os.path.splitext(str(payload.get("filename", "screenshot")))[0]).strip("-") or "screenshot"
+                safe_id = re.sub(r"[^a-zA-Z0-9_-]+", "-", str(payload.get("id", ""))).strip("-")
+                filename = f"{safe_stem}-{safe_id}.{extension}" if safe_id else f"{safe_stem}.{extension}"
+                filename = os.path.basename(re.sub(r"[^a-zA-Z0-9_.-]+", "-", filename))
 
                 os.makedirs(ISSUE_ASSET_DIR, exist_ok=True)
-                target = os.path.join(ISSUE_ASSET_DIR, filename)
+                asset_root = os.path.realpath(ISSUE_ASSET_DIR)
+                target = os.path.realpath(os.path.join(asset_root, filename))
+                if os.path.commonpath([asset_root, target]) != asset_root:
+                    self._send_json(400, {"error": "Invalid asset path."})
+                    return
                 with open(target, "wb") as file:
-                    file.write(base64.b64decode(match.group(2)))
+                    file.write(raw_bytes)
                 self._send_json(200, {"src": f"/issue-assets/{filename}"})
             except Exception as error:
                 self._send_json(500, {"error": str(error)})
             return
 
-        if self.path == "/api/desktop-alarm":
-            length = int(self.headers.get("Content-Length", "0"))
+        if parsed_path == "/api/desktop-alarm":
+            payload = self._read_json_body(max_bytes=64 * 1024)
+            if payload is None:
+                return
+            if not os.path.exists(DESKTOP_ALARM_SCRIPT):
+                self._send_json(200, {"ok": False, "error": "Desktop alarm helper not installed."})
+                return
             try:
-                payload = json.loads(self.rfile.read(length).decode("utf-8"))
                 task = str(payload.get("task") or "固定提醒")
                 time_text = str(payload.get("time") or "")
                 subprocess.Popen(
@@ -388,13 +441,14 @@ class TodoHandler(SimpleHTTPRequestHandler):
                 self._send_json(500, {"ok": False, "error": str(error)})
             return
 
-        if self.path != "/api/data":
+        if parsed_path != "/api/data":
             self.send_error(404)
             return
 
-        length = int(self.headers.get("Content-Length", "0"))
+        payload = self._read_json_body()
+        if payload is None:
+            return
         try:
-            payload = json.loads(self.rfile.read(length).decode("utf-8"))
             with DATA_LOCK:
                 existing_data = {}
                 if os.path.exists(DATA_FILE):

@@ -13,12 +13,15 @@ colleague-calendar-import-*.json
 
 # Editor / OS
 .DS_Store
+__pycache__/
+*.pyc
 
 # Local backups of source
 *.bak
 *.bak-*
 
 # Local-only experiments and agent plans
+.impeccable/
 desktop_pet_alarm.py
 docs/superpowers/
 

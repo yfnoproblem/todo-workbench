@@ -3,149 +3,184 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Todo 工作台</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23fff8cf'/%3E%3Cpath d='M17 35c10-19 21-22 32-18-2 18-12 29-31 29 6-4 12-9 17-17-7 5-13 8-18 6Z' fill='%2322a86f'/%3E%3Ccircle cx='19' cy='18' r='6' fill='%23ffe66d'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css?v=20261021-monthly-checklist" />
+    <title>Todo 工作台 · made of stardust</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23160f2e'/%3E%3Cellipse cx='32' cy='27' rx='15' ry='18' fill='%23efeaff'/%3E%3Cpath d='M32 45c-1 5 3 8 1 13' stroke='%23b8a9ff' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Cpath d='M16 16l2 5 5 2-5 2-2 5-2-5-5-2 5-2z' fill='%23c4b5fd'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500&family=LXGW+WenKai+TC:wght@400&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500&family=LXGW+WenKai+TC:wght@400&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" /></noscript>
+    <script>try{if(localStorage.getItem("todo-workbench:theme")==="day")document.documentElement.setAttribute("data-theme","day")}catch(e){}</script>
+    <link rel="stylesheet" href="./styles.css?v=20261125-pr1" />
   </head>
-  <body>
+  <body data-active-tab="today">
+    <div class="stardust-atmosphere" aria-hidden="true">
+      <div class="stardust-halo"></div>
+      <div class="stardust-sparkles">
+        <svg class="sparkle s1" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5Z"/></svg>
+        <svg class="sparkle s2" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0L13.8 10.2L24 12L13.8 13.8L12 24L10.2 13.8L0 12L10.2 10.2Z"/></svg>
+        <svg class="sparkle s3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0L14.2 9.8L24 12L14.2 14.2L12 24L9.8 14.2L0 12L9.8 9.8Z"/></svg>
+      </div>
+    </div>
+
     <main class="app-shell">
       <section class="workspace" aria-label="Todo 工作台">
         <header class="topbar">
-          <div>
-            <p class="eyebrow">活动运营工作台</p>
-            <h1>Todo 工作台</h1>
-          </div>
+          <nav class="tabbar" role="tablist" aria-label="工作台页面">
+            <button class="tab-button is-active" type="button" role="tab" aria-selected="true" data-tab="today">
+              <svg class="tab-star" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0L14.6 9.4L24 12L14.6 14.6L12 24L9.4 14.6L0 12L9.4 9.4Z"/></svg>
+              <span>今日工作台</span>
+            </button>
+            <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="calendar"><span>工作日历</span></button>
+            <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="projects"><span>项目跟进</span></button>
+            <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="memos"><span>先放这儿</span></button>
+            <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="issues"><span>待写 Issue</span></button>
+            <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="monthly"><span>月度清单</span></button>
+            <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="review"><span>日程回顾</span></button>
+            <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="reminders"><span>固定提醒设置</span></button>
+          </nav>
+
           <div class="top-actions">
-            <select class="top-select" id="exportRangeInput" aria-label="导出范围">
-              <option value="week" selected>本周</option>
-              <option value="month">本月</option>
-              <option value="all">全部</option>
-            </select>
-            <button class="small-button" id="exportButton" type="button">导出 MD</button>
-            <button class="small-button" id="importButton" type="button">导入 JSON</button>
-            <input class="hidden-file" id="importFile" type="file" accept="application/json,.json" />
-            <button class="icon-button" id="permissionButton" type="button" title="开启浏览器通知" aria-label="开启浏览器通知">
-              <span aria-hidden="true">🔔</span>
+            <span class="save-status-badge" id="saveStatusBadge" aria-live="polite" title="本地数据持久化状态">已本地保存</span>
+            <details class="topbar-tools-menu" id="topbarToolsMenu">
+              <summary class="ghost-action" aria-label="数据导出与通知工具">工具 ▾</summary>
+              <div class="topbar-tools-panel">
+                <div class="topbar-tools-row">
+                  <span class="topbar-tools-label">导出范围</span>
+                  <select class="top-select" id="exportRangeInput" aria-label="导出范围">
+                    <option value="week" selected>本周</option>
+                    <option value="month">本月</option>
+                    <option value="all">全部</option>
+                  </select>
+                </div>
+                <div class="topbar-tools-row">
+                  <span class="topbar-tools-label">星海仪式感</span>
+                  <button class="ghost-action topbar-ritual-btn" id="ritualToggleButton" type="button" aria-pressed="true" title="切换气球动效、签文与陪伴彩蛋">开启中 ✦</button>
+                </div>
+                <div class="topbar-tools-actions">
+                  <button class="ghost-action" id="exportButton" type="button">导出 MD</button>
+                  <button class="ghost-action" id="importButton" type="button">导入 JSON</button>
+                  <input class="hidden-file" id="importFile" type="file" accept="application/json,.json" />
+                  <button class="ghost-action" id="permissionButton" type="button" title="开启浏览器通知" aria-label="开启浏览器通知">
+                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    <span>系统通知</span>
+                  </button>
+                </div>
+              </div>
+            </details>
+            <button class="theme-toggle" id="themeToggleButton" type="button" title="切换月白日间 / 星夜追光">
+              <svg class="ui-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="4"/>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+              </svg>
+              <svg class="ui-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                <path d="M19 4v3M17.5 5.5h3"/>
+              </svg>
+              <span id="themeToggleLabel">月白日间</span>
             </button>
           </div>
         </header>
 
-        <nav class="tabbar" aria-label="工作台页面">
-          <button class="tab-button is-active" type="button" data-tab="today">今日工作台</button>
-          <button class="tab-button" type="button" data-tab="calendar">工作日历</button>
-          <button class="tab-button" type="button" data-tab="projects">项目跟进</button>
-          <button class="tab-button" type="button" data-tab="memos">先放这儿</button>
-          <button class="tab-button" type="button" data-tab="issues">待写 Issue</button>
-          <button class="tab-button" type="button" data-tab="monthly">月度清单</button>
-          <button class="tab-button" type="button" data-tab="review">日程回顾</button>
-          <button class="tab-button" type="button" data-tab="reminders">固定提醒设置</button>
-        </nav>
+        <section class="hero-masthead" aria-label="工作台主视觉">
+          <div class="hero-title-group">
+            <h1 id="heroTitle">今日工作台</h1>
+          </div>
+          <button class="hero-balloon-stage" id="heroBalloonButton" type="button" aria-label="轻点小气球触发星尘彩蛋" title="点一下小气球">
+            <img class="hero-balloon-plate" src="./assets/plates/balloon-plate.png" alt="" />
+          </button>
+          <div class="stardust-subtitle-wrap">
+            <p class="stardust-subtitle">
+              <span>made of stardust</span>
+              <span class="stardust-dot" aria-hidden="true">·</span>
+              <button class="stardust-date-btn" id="heroDateStamp" type="button" aria-expanded="false" aria-controls="stardustNotePopover" title="点击查看 12.12 倒计时与今日签文">12.12</button>
+            </p>
+            <aside class="stardust-note-popover" id="stardustNotePopover" role="region" aria-label="星海签文与生日倒计时" hidden>
+              <div class="stardust-note-head">
+                <span class="stardust-countdown" id="stardustCountdown">距离 12.12 还有 -- 天</span>
+                <button class="text-button stardust-next-quote" id="stardustNextQuoteBtn" type="button">换一句</button>
+              </div>
+              <p class="stardust-quote-text" id="stardustQuoteText"></p>
+              <p class="stardust-quote-source" id="stardustQuoteSource"></p>
+            </aside>
+          </div>
+        </section>
 
         <section class="view-section is-active" id="todayView" data-view="today">
-          <section class="panel quick-capture" aria-label="快速记录">
-            <form id="todoForm" class="todo-form">
-              <label class="field task-field">
-                <span>快速记录</span>
-                <input id="todoInput" name="todo" type="text" placeholder="想到什么先丢进来，例如：确认 5.20 酒吧能否合作" required maxlength="120" autocomplete="off" />
-              </label>
+          <div class="today-grid">
+            <div class="today-primary">
+              <section class="quick-capture" aria-label="快速记录">
+                <form id="todoForm" class="todo-form">
+                  <div class="capture-main-row">
+                    <label class="field task-field">
+                      <span class="sr-only">快速记录</span>
+                      <input id="todoInput" name="todo" type="text" placeholder="想到什么先记下来，如：确认 5.20 场地合作" required maxlength="120" autocomplete="off" />
+                    </label>
+                    <button class="capture-submit" type="submit">
+                      <span aria-hidden="true">＋</span>
+                      <span>记一条</span>
+                    </button>
+                  </div>
 
-              <label class="field">
-                <span>放到</span>
-                <select id="targetInput" name="target">
-                  <option value="today" selected>今天</option>
-                  <option value="tomorrow">明天</option>
-                  <option value="custom">选择日期</option>
-                  <option value="memo">先放这儿</option>
-                </select>
-              </label>
+                  <div class="capture-meta-row">
+                    <label class="field inline-field">
+                      <span>放到</span>
+                      <select id="targetInput" name="target">
+                        <option value="today" selected>今天</option>
+                        <option value="tomorrow">明天</option>
+                        <option value="custom">选择日期</option>
+                        <option value="memo">先放这儿</option>
+                      </select>
+                    </label>
 
-              <label class="field date-field" id="customDateField">
-                <span>日期</span>
-                <input id="dateInput" name="date" type="date" />
-              </label>
+                    <label class="field inline-field date-field" id="customDateField">
+                      <span>日期</span>
+                      <input id="dateInput" name="date" type="date" />
+                    </label>
 
-              <label class="field owner-field">
-                <span>负责人</span>
-                <select id="ownerInput" name="owner">
-                  <option value="我" selected>我</option>
-                  <option value="custom">其他人</option>
-                </select>
-                <input class="owner-custom-input is-hidden" id="ownerCustomInput" name="ownerCustom" type="text" placeholder="输入负责人姓名" maxlength="24" autocomplete="off" />
-              </label>
+                    <label class="field inline-field owner-field">
+                      <span>负责人</span>
+                      <select id="ownerInput" name="owner">
+                        <option value="我" selected>我</option>
+                        <option value="custom">其他人</option>
+                      </select>
+                      <input class="owner-custom-input is-hidden" id="ownerCustomInput" name="ownerCustom" type="text" placeholder="输入负责人姓名" maxlength="24" autocomplete="off" />
+                    </label>
 
-              <label class="field">
-                <span>业务板块</span>
-                <select id="moduleInput" name="module">
-                  <option value="活动创建与报名">活动创建</option>
-                  <option value="补位与出席">补位出席</option>
-                  <option value="物料与打印">物料打印</option>
-                  <option value="酒吧与场地">酒吧场地</option>
-                  <option value="客服与反馈">客服反馈</option>
-                  <option value="财务与结款">财务结款</option>
-                  <option value="技术需求">技术需求</option>
-                  <option value="人员分工">人员分工</option>
-                  <option value="市场/小红书">市场小红书</option>
-                  <option value="复盘与优化">复盘优化</option>
-                </select>
-              </label>
+                    <label class="field inline-field">
+                      <span>板块</span>
+                      <select id="moduleInput" name="module">
+                        <option value="活动创建与报名">活动创建</option>
+                        <option value="补位与出席">补位出席</option>
+                        <option value="物料与打印">物料打印</option>
+                        <option value="酒吧与场地">酒吧场地</option>
+                        <option value="客服与反馈">客服反馈</option>
+                        <option value="财务与结款">财务结款</option>
+                        <option value="技术需求">技术需求</option>
+                        <option value="人员分工">人员分工</option>
+                        <option value="市场/小红书">市场小红书</option>
+                        <option value="复盘与优化">复盘优化</option>
+                      </select>
+                    </label>
 
-              <label class="field">
-                <span>优先级</span>
-                <select id="priorityInput" name="priority">
-                  <option value="今天必须" selected>今天必须</option>
-                  <option value="重要推进">重要推进</option>
-                  <option value="可顺手做">可顺手做</option>
-                  <option value="先记着">先记着</option>
-                </select>
-              </label>
-
-              <button class="primary-button" type="submit">
-                <span aria-hidden="true">＋</span>
-                记录
-              </button>
-            </form>
-          </section>
-
-          <div class="today-split">
-            <aside class="today-left" aria-label="今日时间轴">
-              <section class="today-reminders" aria-label="今日固定提醒">
-                <div class="section-header">
-                  <h2>今日提醒</h2>
-                  <span id="todayReminderCount">0 项</span>
-                </div>
-                <div class="empty-state compact-empty" id="todayReminderEmpty">
-                  <p>今天没有固定提醒。</p>
-                  <span>其他日期的固定提醒不会占用今天的视野。</span>
-                </div>
-                <ul class="reminder-list compact-reminder-list" id="todayReminderList"></ul>
+                    <label class="field inline-field">
+                      <span>优先级</span>
+                      <select id="priorityInput" name="priority">
+                        <option value="今天必须" selected>今天必须</option>
+                        <option value="重要推进">重要推进</option>
+                        <option value="可顺手做">可顺手做</option>
+                        <option value="先记着">先记着</option>
+                      </select>
+                    </label>
+                  </div>
+                </form>
               </section>
 
-              <section class="lark-calendar-panel" aria-label="今日飞书日程">
-                <div class="section-header">
-                  <div>
-                    <p class="eyebrow">硬时间安排</p>
-                    <h2>今日飞书日程</h2>
-                  </div>
-                  <div class="lark-calendar-actions">
-                    <span id="larkCalendarCount">未同步</span>
-                    <button class="small-button" id="refreshLarkCalendarButton" type="button">刷新</button>
-                  </div>
-                </div>
-                <div class="empty-state compact-empty" id="larkCalendarEmpty">
-                  <p>还没有读取飞书日程。</p>
-                  <span>授权后会在这里显示今天已经定下时间的日程。</span>
-                </div>
-                <ul class="lark-calendar-list" id="larkCalendarList"></ul>
-              </section>
-            </aside>
-
-            <div class="today-right">
               <section class="daily-closeout" id="dailyCloseout" aria-label="待收尾任务">
                 <div class="section-header closeout-header">
-                  <div>
-                    <p class="eyebrow">过期任务会持续提醒</p>
-                    <h2>待收尾</h2>
-                  </div>
+                  <h2>待收尾</h2>
                   <span id="closeoutCount">0 项待收尾</span>
                 </div>
                 <div class="closeout-actions" aria-label="批量转移待收尾任务">
@@ -156,8 +191,13 @@
                   <button class="small-button" type="button" data-closeout-bulk="memo">全部先放这儿</button>
                 </div>
                 <div class="empty-state compact-empty" id="closeoutEmpty">
-                  <p>没有需要重新安排日期的任务。</p>
-                  <span>18:30 会检查今天未完成的任务；过往未完成任务会一直留在这里，直到你转走或完成。</span>
+                  <div class="empty-companion-row">
+                    <img class="liujin-companion" src="./assets/plates/liujin-plate.png" alt="" aria-hidden="true" />
+                    <div>
+                      <p>没有需要重新安排日期的任务，六斤也在等你早点下班。</p>
+                      <span>18:30 会检查今天未完成的任务；过往未完成任务会一直留在这里。</span>
+                    </div>
+                  </div>
                 </div>
                 <ul class="closeout-list" id="closeoutList"></ul>
               </section>
@@ -177,24 +217,102 @@
 
                 <div class="todo-column">
                   <div class="section-header">
-                    <h2>今日 Todo</h2>
+                    <h2>今日与后续日程</h2>
                     <span id="datedCount">0 项</span>
                   </div>
                   <div class="empty-state" id="todoDatedEmpty">
-                    <p>还没有日期任务。</p>
-                    <span>快速记录时选择今天、明天或具体日期。</span>
+                    <div class="empty-companion-row">
+                      <img class="liujin-companion" src="./assets/plates/liujin-plate.png" alt="" aria-hidden="true" />
+                      <div>
+                        <p>今日事已毕，星辰、小气球与六斤都在休息。</p>
+                        <span>快速记录时选择今天、明天或具体日期。</span>
+                      </div>
+                    </div>
                   </div>
                   <div class="date-groups" id="todoDatedList"></div>
                 </div>
               </section>
             </div>
+
+            <aside class="today-secondary" aria-label="任务备注与今日提醒">
+              <section class="today-inspector" id="todayInspector" aria-label="当前任务备注与发散思考">
+                <div class="inspector-block">
+                  <div class="section-header">
+                    <h2>任务备注</h2>
+                    <button class="ghost-action inspector-edit-btn" id="inspectorOpenDetailBtn" type="button">展开编辑</button>
+                  </div>
+                  <div class="inspector-body" id="inspectorNotesBody">
+                    <p class="inspector-placeholder">点击左侧任意任务，即可在这里聚焦查看它的备注与发散思考。</p>
+                  </div>
+                </div>
+
+                <div class="inspector-block">
+                  <div class="section-header">
+                    <h2>发散思考</h2>
+                  </div>
+                  <div class="inspector-body" id="inspectorThinkingBody">
+                    <p class="inspector-placeholder">活动灵感、现场动线与复盘想法会沉淀在这里。</p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="today-reminders" aria-label="今日固定提醒">
+                <div class="section-header">
+                  <h2>今日固定提醒</h2>
+                  <span id="todayReminderCount">0 项</span>
+                </div>
+                <div class="empty-state compact-empty" id="todayReminderEmpty">
+                  <p>今天没有固定提醒。</p>
+                  <span>其他日期的提醒不会干扰今天的视野。</span>
+                </div>
+                <ul class="reminder-list compact-reminder-list" id="todayReminderList"></ul>
+              </section>
+
+              <section class="lark-calendar-panel" aria-label="今日飞书日程">
+                <div class="section-header">
+                  <h2>今日飞书日程</h2>
+                  <div class="lark-calendar-actions">
+                    <span id="larkCalendarCount">未同步</span>
+                    <button class="small-button" id="refreshLarkCalendarButton" type="button">刷新</button>
+                  </div>
+                </div>
+                <div class="empty-state compact-empty" id="larkCalendarEmpty">
+                  <p>还没有读取飞书日程。</p>
+                  <span>授权后会在这里显示今天已经定下时间的日程。</span>
+                </div>
+                <ul class="lark-calendar-list" id="larkCalendarList"></ul>
+              </section>
+
+              <footer class="today-progress-footer" id="todayProgressFooter">
+                <button class="liujin-dock" id="liujinDockBtn" type="button" aria-label="摸摸正在打盹的黑柴六斤" title="六斤正在打盹，点一下摸摸头">
+                  <img class="liujin-dock-img" src="./assets/plates/liujin-plate.png" alt="" />
+                </button>
+                <div class="progress-text-row">
+                  <span class="progress-count-wrap">
+                    <svg class="tangram-emblem" id="todayTangram" viewBox="0 0 40 40" aria-hidden="true" title="《心室》七巧板进度">
+                      <polygon class="tangram-piece" data-piece="0" points="4,4 36,4 20,20" />
+                      <polygon class="tangram-piece" data-piece="1" points="4,4 20,20 4,36" />
+                      <polygon class="tangram-piece" data-piece="2" points="36,4 36,20 28,12" />
+                      <polygon class="tangram-piece" data-piece="3" points="20,20 28,12 36,20 28,28" />
+                      <polygon class="tangram-piece" data-piece="4" points="20,20 28,28 12,28" />
+                      <polygon class="tangram-piece" data-piece="5" points="4,36 12,28 28,28 20,36" />
+                      <polygon class="tangram-piece" data-piece="6" points="36,20 36,36 20,36" />
+                    </svg>
+                    <span id="todayProgressText">今日完成 0/0</span>
+                  </span>
+                  <span class="progress-motto" id="todayProgressMotto">一起去未来</span>
+                </div>
+                <div class="progress-track" aria-hidden="true">
+                  <div class="progress-fill" id="todayProgressFill"></div>
+                </div>
+              </footer>
+            </aside>
           </div>
         </section>
 
         <section class="view-section work-calendar-section" id="workCalendarView" data-view="calendar" aria-label="工作日历">
           <section class="panel calendar-toolbar" aria-label="工作日历工具栏">
             <div class="calendar-title-block">
-              <p class="eyebrow">项目关键节点排期</p>
               <h2>工作日历</h2>
             </div>
             <div class="calendar-toolbar-controls">
@@ -224,43 +342,77 @@
 
             <aside class="calendar-project-panel" aria-label="项目卡片">
               <div class="section-header">
-                <div>
-                  <p class="eyebrow">项目切换</p>
-                  <h2>项目</h2>
-                </div>
+                <h2>项目</h2>
                 <span id="calendarProjectCount">0 个</span>
               </div>
+              <div class="calendar-project-expanded" id="calendarProjectExpanded"></div>
               <div class="calendar-project-cards" id="calendarProjectCards"></div>
             </aside>
           </div>
         </section>
 
         <section class="view-section memo-section" id="memoView" data-view="memos" aria-label="备忘箱">
-          <section class="panel memo-composer" aria-label="新增备忘">
-            <form id="memoForm" class="memo-form">
-              <div class="memo-chat-box">
+          <header class="view-header">
+            <h2>先放这儿</h2>
+            <span>暂未排期的灵感、截图与待讨论线索，到回看日再分拣。</span>
+          </header>
+          <div class="memo-split-grid">
+            <section class="memo-board" aria-label="备忘列表">
+              <div class="section-header">
+                <h2>该看看了</h2>
+                <span id="memoCount">0 项</span>
+              </div>
+
+              <div class="memo-filter-row" aria-label="筛选备忘">
+                <button class="chip-button is-active" type="button" data-memo-filter="due">该看看了</button>
+                <button class="chip-button" type="button" data-memo-filter="weekly">本周待整理</button>
+                <button class="chip-button" type="button" data-memo-filter="all">全部</button>
+                <button class="chip-button" type="button" data-memo-filter="discussion">待讨论</button>
+                <button class="chip-button" type="button" data-memo-filter="issues">待写 Issue</button>
+                <button class="chip-button" type="button" data-memo-filter="done">已整理</button>
+                <button class="chip-button" type="button" data-memo-filter="archived">已归档</button>
+              </div>
+
+              <div class="empty-state" id="memoEmpty">
+                <p>暂时没有待分拣的碎片。</p>
+                <span>像藏起时光一样，右侧随手丢进来的想法与附件，会按回看日沉淀在这里。</span>
+              </div>
+              <div class="memo-list" id="memoList"></div>
+            </section>
+
+            <aside class="memo-composer-aside" aria-label="新增备忘">
+              <div class="section-header">
+                <h2>快速丢进来</h2>
+              </div>
+              <form id="memoForm" class="memo-form">
                 <label class="field">
-                  <span>备忘箱</span>
+                  <span>备忘内容</span>
                   <textarea id="memoTextInput" placeholder="像和我说话一样丢进来：一句话、待讨论问题、截图说明都可以"></textarea>
                 </label>
 
-                <div class="memo-chip-row" aria-label="选择备忘分类">
-                  <button class="chip-button is-active" type="button" data-memo-category="先记着">先记着</button>
-                  <button class="chip-button" type="button" data-memo-category="要推进">要推进</button>
-                  <button class="chip-button" type="button" data-memo-category="要盯时间">要盯时间</button>
-                  <button class="chip-button" type="button" data-memo-category="待写 Issue">待写 Issue</button>
+                <div class="memo-group">
+                  <span class="memo-group-label">分类</span>
+                  <div class="memo-chip-row" aria-label="选择备忘分类">
+                    <button class="chip-button is-active" type="button" data-memo-category="先记着">先记着</button>
+                    <button class="chip-button" type="button" data-memo-category="要推进">要推进</button>
+                    <button class="chip-button" type="button" data-memo-category="要盯时间">要盯时间</button>
+                    <button class="chip-button" type="button" data-memo-category="待写 Issue">待写 Issue</button>
+                  </div>
                 </div>
 
-                <div class="memo-chip-row" aria-label="选择备忘状态">
-                  <button class="chip-button is-active" type="button" data-memo-status="待整理">待整理</button>
-                  <button class="chip-button" type="button" data-memo-status="已读待判断">已读待判断</button>
-                  <button class="chip-button" type="button" data-memo-status="待讨论">待讨论</button>
+                <div class="memo-group">
+                  <span class="memo-group-label">状态</span>
+                  <div class="memo-chip-row" aria-label="选择备忘状态">
+                    <button class="chip-button is-active" type="button" data-memo-status="待整理">待整理</button>
+                    <button class="chip-button" type="button" data-memo-status="已读待判断">已读待判断</button>
+                    <button class="chip-button" type="button" data-memo-status="待讨论">待讨论</button>
+                  </div>
                 </div>
 
                 <label class="image-drop-zone memo-drop-zone" id="memoDropZone" for="memoImageInput">
                   <input class="hidden-file" id="memoImageInput" type="file" accept="image/*,.md,text/markdown,text/plain" multiple />
                   <strong>粘贴、拖入或选择截图 / Markdown</strong>
-                  <small>Markdown 会作为附件先放在预览区；点“放进去”后跟随这条备忘保存。</small>
+                  <small>附件先放预览区，点“放进去”一起保存。</small>
                 </label>
                 <div class="issue-image-preview" id="memoPendingImages"></div>
 
@@ -268,43 +420,21 @@
                   <span aria-hidden="true">＋</span>
                   放进去
                 </button>
-              </div>
-            </form>
-          </section>
-
-          <section class="memo-board" aria-label="备忘列表">
-            <div class="section-header">
-              <div>
-                <p class="eyebrow">备忘箱</p>
-                <h2>该看看了</h2>
-              </div>
-              <span id="memoCount">0 项</span>
-            </div>
-
-            <div class="memo-filter-row" aria-label="筛选备忘">
-              <button class="chip-button is-active" type="button" data-memo-filter="due">该看看了</button>
-              <button class="chip-button" type="button" data-memo-filter="weekly">本周待整理</button>
-              <button class="chip-button" type="button" data-memo-filter="all">全部</button>
-              <button class="chip-button" type="button" data-memo-filter="discussion">待讨论</button>
-              <button class="chip-button" type="button" data-memo-filter="issues">待写 Issue</button>
-              <button class="chip-button" type="button" data-memo-filter="done">已整理</button>
-              <button class="chip-button" type="button" data-memo-filter="archived">已归档</button>
-            </div>
-
-            <div class="empty-state" id="memoEmpty">
-              <p>这里暂时没有需要看的东西。</p>
-              <span>一句话、截图、待讨论计划都可以先放进来，到回看日再处理。</span>
-            </div>
-            <div class="memo-list" id="memoList"></div>
-          </section>
+              </form>
+            </aside>
+          </div>
         </section>
 
         <section class="view-section project-section" id="projectView" data-view="projects" aria-label="项目跟进">
+          <header class="view-header">
+            <h2>项目跟进</h2>
+            <span>集中追踪进行中的运营项目、待拆事项与关联 Todo。</span>
+          </header>
           <section class="panel project-composer" aria-label="新增项目">
             <form id="projectForm" class="project-form">
               <label class="field task-field">
                 <span>项目名</span>
-                <input id="projectNameInput" name="projectName" type="text" placeholder="例如：库存结构化、盒子方案、报名排序优化" maxlength="80" autocomplete="off" />
+                <input id="projectNameInput" name="projectName" type="text" placeholder="例如：库存结构化、盒子方案、报名排序优化" required maxlength="80" autocomplete="off" />
               </label>
 
               <label class="field">
@@ -339,10 +469,7 @@
           <section class="project-dashboard" aria-label="项目跟进列表">
             <div class="project-lane">
               <div class="section-header">
-                <div>
-                  <p class="eyebrow">按项目推进</p>
-                  <h2>项目列表</h2>
-                </div>
+                <h2>项目列表</h2>
                 <span id="projectCount">0 个</span>
               </div>
               <div class="empty-state compact-empty" id="projectEmpty">
@@ -354,10 +481,7 @@
 
             <div class="project-lane project-detail-lane">
               <div class="section-header">
-                <div>
-                  <p class="eyebrow">资料池 / 待拆事项 / 实际 Todo</p>
-                  <h2>项目详情</h2>
-                </div>
+                <h2>项目详情</h2>
               </div>
               <div class="project-detail" id="projectDetail">
                 <p class="project-detail-empty">选一个项目，就能看它的待拆事项、正式 Todo 和附件。</p>
@@ -367,6 +491,10 @@
         </section>
 
         <section class="view-section issue-section" id="issueView" data-view="issues" aria-label="待写 Issue">
+          <header class="view-header">
+            <h2>待写 Issue</h2>
+            <span>先存下页面问题与截图，整理清楚后再提给技术或同步今日 Todo。</span>
+          </header>
           <section class="panel issue-composer" aria-label="记录待写 Issue">
             <form id="issueForm" class="issue-form">
               <label class="field task-field">
@@ -427,11 +555,11 @@
 
           <section class="issue-board" aria-label="待写 Issue 列表">
             <div class="section-header">
-              <h2>待写 Issue</h2>
+              <h2>Issue 列表</h2>
               <span id="issueCount">0 项</span>
             </div>
             <div class="empty-state" id="issueEmpty">
-              <p>还没有待写 Issue。</p>
+              <p>还没有待写 Issue，一切运转顺滑。</p>
               <span>遇到页面问题时，截图先放这里，再慢慢整理成清楚的需求。</span>
             </div>
             <div class="issue-list" id="issueList"></div>
@@ -439,6 +567,10 @@
         </section>
 
         <section class="view-section monthly-section" id="monthlyView" data-view="monthly" aria-label="月度清单">
+          <header class="view-header">
+            <h2>月度清单</h2>
+            <span>每月固定推进的周期事项，勾选记录按月份独立保存。</span>
+          </header>
           <section class="panel monthly-composer" aria-label="添加月度事项">
             <form id="monthlyForm" class="monthly-form">
               <label class="field">
@@ -469,11 +601,22 @@
                 <button class="small-button" type="button" data-monthly-nav="next">下月 ›</button>
                 <button class="small-button" type="button" data-monthly-nav="today">回到本月</button>
               </div>
-              <span id="monthlyProgress">已完成 0/0</span>
+              <span class="monthly-progress-wrap">
+                <svg class="tangram-emblem" id="monthlyTangram" viewBox="0 0 40 40" aria-hidden="true" title="《心室》七巧板进度">
+                  <polygon class="tangram-piece" data-piece="0" points="4,4 36,4 20,20" />
+                  <polygon class="tangram-piece" data-piece="1" points="4,4 20,20 4,36" />
+                  <polygon class="tangram-piece" data-piece="2" points="36,4 36,20 28,12" />
+                  <polygon class="tangram-piece" data-piece="3" points="20,20 28,12 36,20 28,28" />
+                  <polygon class="tangram-piece" data-piece="4" points="20,20 28,28 12,28" />
+                  <polygon class="tangram-piece" data-piece="5" points="4,36 12,28 28,28 20,36" />
+                  <polygon class="tangram-piece" data-piece="6" points="36,20 36,36 20,36" />
+                </svg>
+                <span id="monthlyProgress">已完成 0/0</span>
+              </span>
             </div>
             <div class="empty-state" id="monthlyEmpty">
               <p>月度清单还是空的。</p>
-              <span>在上面添加每月固定要做的事，勾选状态按月份分开保存，每个月自动从头开始。</span>
+              <span>在上面添加每月固定要做的事，每勾选一项，七巧板就会为你点亮一块。</span>
             </div>
             <div class="monthly-groups" id="monthlyGroups"></div>
           </section>
@@ -481,10 +624,7 @@
 
         <section class="view-section review-section" id="reviewView" data-view="review" aria-label="日程回顾">
           <div class="section-header review-header">
-            <div>
-              <p class="eyebrow">可回溯记录</p>
-              <h2>日程回顾</h2>
-            </div>
+            <h2>日程回顾</h2>
             <div class="review-tools">
               <label class="field compact-field">
                 <span>范围</span>
@@ -503,10 +643,7 @@
           </div>
           <section class="archived-project-review" aria-label="已归档项目">
             <div class="section-header">
-              <div>
-                <p class="eyebrow">项目复盘</p>
-                <h3>已归档项目</h3>
-              </div>
+              <h3>已归档项目</h3>
               <span id="archivedProjectCount">0 个</span>
             </div>
             <div class="empty-state compact-empty" id="archivedProjectEmpty">
@@ -516,13 +653,17 @@
             <div class="archived-project-list" id="archivedProjectList"></div>
           </section>
           <div class="empty-state" id="reviewEmpty">
-            <p>还没有可回顾的任务。</p>
+            <p>过去｜现在｜未来，留下的每一步都会在这里发光。</p>
             <span>新增任务后，这里会按时间留下完整记录。</span>
           </div>
           <div class="review-list" id="reviewList"></div>
         </section>
 
         <section class="view-section reminder-settings" id="reminderView" data-view="reminders">
+          <header class="view-header">
+            <h2>固定提醒设置</h2>
+            <span>按周几与时刻设置的周期性提醒，仅在当天出现在今日工作台。</span>
+          </header>
           <section class="panel composer" aria-label="创建提醒">
             <form id="reminderForm" class="reminder-form">
               <label class="field task-field">
@@ -576,7 +717,7 @@
             </div>
             <div class="empty-state" id="emptyState">
               <p>还没有提醒。</p>
-              <span>添加一个固定每周要做的事，它会保存在这个浏览器里。</span>
+              <span>添加一个固定每周要做的事，所有提醒会自动保存到本地数据文件。</span>
             </div>
             <ul class="reminder-list" id="reminderList"></ul>
           </section>
@@ -585,10 +726,16 @@
     </main>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <aside class="stardust-signoff" id="stardustSignoff" role="status" aria-live="polite" hidden>
+      <div class="stardust-signoff-head">
+        <span class="stardust-signoff-title">今日事已毕 ✦</span>
+        <button class="text-button stardust-signoff-close" id="stardustSignoffClose" type="button" aria-label="关闭收工签">收起</button>
+      </div>
+      <p class="stardust-signoff-quote" id="stardustSignoffQuote"></p>
+    </aside>
     <div class="alarm-overlay" id="alarmOverlay" hidden>
       <section class="alarm-dialog" role="dialog" aria-modal="true" aria-labelledby="alarmTitle">
-        <p class="alarm-kicker">固定提醒</p>
-        <h2 id="alarmTitle">现在该处理这件事了</h2>
+        <h2 id="alarmTitle">星光提醒 · 该处理这件事了</h2>
         <p class="alarm-time" id="alarmTime"></p>
         <p class="alarm-body" id="alarmBody"></p>
         <div class="alarm-actions">
@@ -600,6 +747,9 @@
       </section>
     </div>
 
-    <script src="./app.js?v=20261021-tombstone"></script>
+    <div class="balloon-flight-layer" id="balloonFlightLayer" aria-hidden="true"></div>
+    <script src="./app.js?v=20261125-pr1"></script>
+    <script src="./theme-effects.js?v=20261125-pr1"></script>
+    <script src="./custom-controls.js?v=20261125-pr1"></script>
   </body>
 </html>

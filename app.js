@@ -205,8 +205,28 @@ let larkCalendarHint = "";
 let activeAlarm = null;
 
 function switchTab(tabName) {
+  document.body.dataset.activeTab = tabName;
+  const heroTitleEl = document.getElementById("heroTitle");
+  const tabLabels = {
+    today: "今日工作台",
+    calendar: "工作日历",
+    projects: "项目跟进",
+    memos: "先放这儿",
+    issues: "待写 Issue",
+    monthly: "月度清单",
+    review: "日程回顾",
+    reminders: "固定提醒设置",
+  };
+  if (heroTitleEl && tabLabels[tabName]) {
+    heroTitleEl.textContent = tabLabels[tabName];
+  }
   for (const button of tabButtons) {
-    button.classList.toggle("is-active", button.dataset.tab === tabName);
+    const isActive = button.dataset.tab === tabName;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+    if (isActive && typeof button.scrollIntoView === "function") {
+      button.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+    }
   }
   for (const section of viewSections) {
     section.classList.toggle("is-active", section.dataset.view === tabName);
@@ -291,8 +311,28 @@ function normalizeReminder(reminder) {
   };
 }
 
+let storageQuotaWarned = false;
+
+function safeStorageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    if (!storageQuotaWarned) {
+      storageQuotaWarned = true;
+      const isQuota = error?.name === "QuotaExceededError" || error?.code === 22;
+      if (typeof showToast === "function") {
+        showToast(isQuota
+          ? "浏览器本地缓存空间已满，改动仍会尝试保存到本地文件。"
+          : "浏览器暂不支持本地缓存，改动仍会尝试保存到本地文件。");
+      }
+    }
+    return false;
+  }
+}
+
 function saveReminders() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reminders));
+  safeStorageSet(STORAGE_KEY, JSON.stringify(reminders));
   saveToFileSoon();
 }
 
@@ -305,7 +345,7 @@ function loadAppState() {
 }
 
 function saveAppState() {
-  localStorage.setItem(APP_STATE_KEY, JSON.stringify(appState));
+  safeStorageSet(APP_STATE_KEY, JSON.stringify(appState));
 }
 
 function normalizeTodo(todo) {
@@ -333,7 +373,7 @@ function loadTodos() {
 }
 
 function saveTodos() {
-  localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todos));
+  safeStorageSet(TODO_STORAGE_KEY, JSON.stringify(todos));
   saveToFileSoon();
 }
 
@@ -386,7 +426,7 @@ function loadIssueDrafts() {
 }
 
 function saveIssueDrafts() {
-  localStorage.setItem(ISSUE_STORAGE_KEY, JSON.stringify(issueDrafts));
+  safeStorageSet(ISSUE_STORAGE_KEY, JSON.stringify(issueDrafts));
   saveToFileSoon();
 }
 
@@ -431,7 +471,7 @@ function loadMemoItems() {
 }
 
 function saveMemoItems() {
-  localStorage.setItem(MEMO_STORAGE_KEY, JSON.stringify(memoItems));
+  safeStorageSet(MEMO_STORAGE_KEY, JSON.stringify(memoItems));
   saveToFileSoon();
 }
 
@@ -495,7 +535,7 @@ function loadProjects() {
 }
 
 function saveProjects() {
-  localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects));
+  safeStorageSet(PROJECT_STORAGE_KEY, JSON.stringify(projects));
   saveToFileSoon();
 }
 
@@ -539,7 +579,7 @@ function loadProjectItems() {
 }
 
 function saveProjectItems() {
-  localStorage.setItem(PROJECT_ITEM_STORAGE_KEY, JSON.stringify(projectItems));
+  safeStorageSet(PROJECT_ITEM_STORAGE_KEY, JSON.stringify(projectItems));
   saveToFileSoon();
 }
 
@@ -598,10 +638,10 @@ function loadT46OpenEvents() {
 }
 
 function saveT46OpenEvents() {
-  localStorage.setItem(T46_EVENT_STORAGE_KEY, JSON.stringify(t46OpenEvents));
-  localStorage.setItem(MONTHLY_ITEM_STORAGE_KEY, JSON.stringify(monthlyItems));
-  localStorage.setItem(MONTHLY_CHECK_STORAGE_KEY, JSON.stringify(monthlyChecks));
-  localStorage.setItem(DELETED_RECORDS_STORAGE_KEY, JSON.stringify(deletedRecords));
+  safeStorageSet(T46_EVENT_STORAGE_KEY, JSON.stringify(t46OpenEvents));
+  safeStorageSet(MONTHLY_ITEM_STORAGE_KEY, JSON.stringify(monthlyItems));
+  safeStorageSet(MONTHLY_CHECK_STORAGE_KEY, JSON.stringify(monthlyChecks));
+  safeStorageSet(DELETED_RECORDS_STORAGE_KEY, JSON.stringify(deletedRecords));
   saveToFileSoon();
 }
 
@@ -614,7 +654,7 @@ function loadLarkCalendarRecords() {
 }
 
 function saveLarkCalendarRecords() {
-  localStorage.setItem(LARK_CALENDAR_STORAGE_KEY, JSON.stringify(larkCalendarRecords));
+  safeStorageSet(LARK_CALENDAR_STORAGE_KEY, JSON.stringify(larkCalendarRecords));
   saveToFileSoon();
 }
 
@@ -761,6 +801,33 @@ function mergeFileRecords(serverRecords = [], localRecords = []) {
   return [...merged.values()];
 }
 
+function persistLocalCollections() {
+  safeStorageSet(TODO_STORAGE_KEY, JSON.stringify(todos));
+  safeStorageSet(STORAGE_KEY, JSON.stringify(reminders));
+  safeStorageSet(ISSUE_STORAGE_KEY, JSON.stringify(issueDrafts));
+  safeStorageSet(MEMO_STORAGE_KEY, JSON.stringify(memoItems));
+  safeStorageSet(PROJECT_STORAGE_KEY, JSON.stringify(projects));
+  safeStorageSet(PROJECT_ITEM_STORAGE_KEY, JSON.stringify(projectItems));
+  safeStorageSet(LARK_CALENDAR_STORAGE_KEY, JSON.stringify(larkCalendarRecords));
+  safeStorageSet(T46_EVENT_STORAGE_KEY, JSON.stringify(t46OpenEvents));
+  safeStorageSet(MONTHLY_ITEM_STORAGE_KEY, JSON.stringify(monthlyItems));
+  safeStorageSet(MONTHLY_CHECK_STORAGE_KEY, JSON.stringify(monthlyChecks));
+  safeStorageSet(DELETED_RECORDS_STORAGE_KEY, JSON.stringify(deletedRecords));
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  if (typeof AbortController === "undefined" || !timeoutMs) {
+    return fetch(url, options);
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function applyMergedFileData(data) {
   todos = mergeFileRecords(data.todos, todos).map(normalizeTodo);
   reminders = mergeFileRecords(data.reminders, reminders).map(normalizeReminder);
@@ -774,17 +841,7 @@ function applyMergedFileData(data) {
   if (data.monthlyChecks && typeof data.monthlyChecks === "object") monthlyChecks = mergeMonthlyChecks(data.monthlyChecks, monthlyChecks);
   deletedRecords = mergeDeletedRecords(data.deletedRecords, deletedRecords);
   applyDeletedRecordsToState();
-  localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todos));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reminders));
-  localStorage.setItem(ISSUE_STORAGE_KEY, JSON.stringify(issueDrafts));
-  localStorage.setItem(MEMO_STORAGE_KEY, JSON.stringify(memoItems));
-  localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects));
-  localStorage.setItem(PROJECT_ITEM_STORAGE_KEY, JSON.stringify(projectItems));
-  localStorage.setItem(LARK_CALENDAR_STORAGE_KEY, JSON.stringify(larkCalendarRecords));
-  localStorage.setItem(T46_EVENT_STORAGE_KEY, JSON.stringify(t46OpenEvents));
-  localStorage.setItem(MONTHLY_ITEM_STORAGE_KEY, JSON.stringify(monthlyItems));
-  localStorage.setItem(MONTHLY_CHECK_STORAGE_KEY, JSON.stringify(monthlyChecks));
-  localStorage.setItem(DELETED_RECORDS_STORAGE_KEY, JSON.stringify(deletedRecords));
+  persistLocalCollections();
   renderTodos();
   renderMemoItems();
   renderProjects();
@@ -792,6 +849,23 @@ function applyMergedFileData(data) {
   renderIssueDrafts();
   renderMonthlyChecklist();
   render();
+}
+
+function setSaveStatus(state, text) {
+  const badge = document.getElementById("saveStatusBadge");
+  if (!badge) return;
+  badge.textContent = text;
+  badge.classList.toggle("is-saving", state === "saving");
+  badge.classList.toggle("is-error", state === "error");
+  if (state === "error") {
+    badge.setAttribute("role", "button");
+    badge.tabIndex = 0;
+    badge.title = "点击重试保存到本地文件";
+  } else {
+    badge.removeAttribute("role");
+    badge.removeAttribute("tabindex");
+    badge.title = "本地数据持久化状态";
+  }
 }
 
 async function flushFileSave({ useBeacon = false } = {}) {
@@ -809,19 +883,34 @@ async function flushFileSave({ useBeacon = false } = {}) {
     return;
   }
   fileSaveInFlight = true;
+  setSaveStatus("saving", "保存中…");
   try {
-    const response = await fetch("/api/data", {
+    const response = await fetchWithTimeout("/api/data", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body,
-    });
-    if (!response.ok) throw new Error(`Save failed: ${response.status}`);
+    }, 15000);
+    if (!response.ok) {
+      const err = new Error(`Save failed: ${response.status}`);
+      err.status = response.status;
+      throw err;
+    }
     const result = await response.json();
     fileRevision = result.savedAt || fileRevision;
     savedChangeCounter = Math.max(savedChangeCounter, changeCounterAtSend);
+    setSaveStatus("saved", "已本地保存");
     if (result.merged && result.data) applyMergedFileData(result.data);
-  } catch {
-    showToast("本地数据文件暂时没有保存成功，请确认工作台服务在运行。");
+  } catch (error) {
+    setSaveStatus("error", "保存失败 · 点击重试");
+    if (error?.status === 413) {
+      showToast("数据体积超过本地保存上限，请清理过大截图后点击顶部状态重试。");
+    } else if (error?.status === 400) {
+      showToast("本地保存请求格式异常，请稍后点击顶部状态重试。");
+    } else if (error?.name === "AbortError") {
+      showToast("本地保存超时，已暂存浏览器；点击顶部状态可重试。");
+    } else {
+      showToast("本地数据文件暂时没有保存成功，请确认工作台服务在运行（点击顶部状态可重试）。");
+    }
   } finally {
     fileSaveInFlight = false;
     if (fileSaveQueued) {
@@ -832,7 +921,11 @@ async function flushFileSave({ useBeacon = false } = {}) {
 }
 
 function saveToFileSoon() {
-  if (!canUseFileStorage()) return;
+  if (!canUseFileStorage()) {
+    setSaveStatus("saved", "已存浏览器");
+    return;
+  }
+  setSaveStatus("saving", "保存中…");
   localChangeCounter += 1;
   if (fileHydrationPending) {
     fileSaveRequestedDuringHydration = true;
@@ -843,54 +936,53 @@ function saveToFileSoon() {
 }
 
 function persistAll() {
-  localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todos));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reminders));
-  localStorage.setItem(ISSUE_STORAGE_KEY, JSON.stringify(issueDrafts));
-  localStorage.setItem(MEMO_STORAGE_KEY, JSON.stringify(memoItems));
-  localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects));
-  localStorage.setItem(PROJECT_ITEM_STORAGE_KEY, JSON.stringify(projectItems));
-  localStorage.setItem(LARK_CALENDAR_STORAGE_KEY, JSON.stringify(larkCalendarRecords));
-  localStorage.setItem(T46_EVENT_STORAGE_KEY, JSON.stringify(t46OpenEvents));
-  localStorage.setItem(MONTHLY_ITEM_STORAGE_KEY, JSON.stringify(monthlyItems));
-  localStorage.setItem(MONTHLY_CHECK_STORAGE_KEY, JSON.stringify(monthlyChecks));
-  localStorage.setItem(DELETED_RECORDS_STORAGE_KEY, JSON.stringify(deletedRecords));
+  persistLocalCollections();
   saveToFileSoon();
+}
+
+let fileHydrationFailed = false;
+
+function reviveSnapshotFromTombstone(collection, snapshot) {
+  const deletedAt = deletedRecords[collection]?.[snapshot.id];
+  if (deletedRecords[collection]) {
+    delete deletedRecords[collection][snapshot.id];
+  }
+  const revivedTs = Math.max(Date.now(), (Date.parse(deletedAt || "") || 0) + 1);
+  snapshot.updatedAt = new Date(revivedTs).toISOString();
+  return snapshot;
 }
 
 async function hydrateFromFile() {
   if (!canUseFileStorage()) return;
   try {
-    const response = await fetch("/api/data", { cache: "no-store" });
-    if (!response.ok) return;
+    const response = await fetchWithTimeout("/api/data", { cache: "no-store" }, 12000);
+    if (!response.ok) {
+      fileHydrationFailed = true;
+      setSaveStatus("error", "读取失败 · 点击重试");
+      showToast(`读取本地数据失败（${response.status}），先使用浏览器里的缓存数据。`);
+      return;
+    }
+    fileHydrationFailed = false;
+    setSaveStatus("saved", "已本地保存");
     const data = await response.json();
     fileRevision = data.savedAt || null;
     const serverHasData = Boolean(data.savedAt) || Boolean(data.todos?.length) || Boolean(data.reminders?.length) || Boolean(data.issueDrafts?.length) || Boolean(data.memoItems?.length) || Boolean(data.projects?.length) || Boolean(data.projectItems?.length) || Boolean(data.larkCalendarRecords?.length) || Boolean(data.t46OpenEvents?.length);
 
     if (serverHasData) {
-      todos = (data.todos || []).map(normalizeTodo);
-      reminders = (data.reminders || []).map(normalizeReminder);
-      issueDrafts = (data.issueDrafts || []).map(normalizeIssueDraft);
-      memoItems = (data.memoItems || []).map(normalizeMemoItem);
-      projects = (data.projects || []).map(normalizeProject);
-      projectItems = (data.projectItems || []).map(normalizeProjectItem);
-      larkCalendarRecords = (data.larkCalendarRecords || []).map(normalizeLarkCalendarRecord);
-      t46OpenEvents = (data.t46OpenEvents || []).map(normalizeT46OpenEvent);
+      todos = (Array.isArray(data.todos) ? data.todos : []).map(normalizeTodo);
+      reminders = (Array.isArray(data.reminders) ? data.reminders : []).map(normalizeReminder);
+      issueDrafts = (Array.isArray(data.issueDrafts) ? data.issueDrafts : []).map(normalizeIssueDraft);
+      memoItems = (Array.isArray(data.memoItems) ? data.memoItems : []).map(normalizeMemoItem);
+      projects = (Array.isArray(data.projects) ? data.projects : []).map(normalizeProject);
+      projectItems = (Array.isArray(data.projectItems) ? data.projectItems : []).map(normalizeProjectItem);
+      larkCalendarRecords = (Array.isArray(data.larkCalendarRecords) ? data.larkCalendarRecords : []).map(normalizeLarkCalendarRecord);
+      t46OpenEvents = (Array.isArray(data.t46OpenEvents) ? data.t46OpenEvents : []).map(normalizeT46OpenEvent);
       if (Array.isArray(data.monthlyItems)) monthlyItems = data.monthlyItems.map(normalizeMonthlyItem);
       if (data.monthlyChecks && typeof data.monthlyChecks === "object") monthlyChecks = normalizeMonthlyChecks(data.monthlyChecks);
       deletedRecords = mergeDeletedRecords(data.deletedRecords, deletedRecords);
       applyDeletedRecordsToState();
       const migrated = migrateInboxTodosToMemos();
-      localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todos));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(reminders));
-      localStorage.setItem(ISSUE_STORAGE_KEY, JSON.stringify(issueDrafts));
-      localStorage.setItem(MEMO_STORAGE_KEY, JSON.stringify(memoItems));
-      localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects));
-      localStorage.setItem(PROJECT_ITEM_STORAGE_KEY, JSON.stringify(projectItems));
-      localStorage.setItem(LARK_CALENDAR_STORAGE_KEY, JSON.stringify(larkCalendarRecords));
-      localStorage.setItem(T46_EVENT_STORAGE_KEY, JSON.stringify(t46OpenEvents));
-  localStorage.setItem(MONTHLY_ITEM_STORAGE_KEY, JSON.stringify(monthlyItems));
-  localStorage.setItem(MONTHLY_CHECK_STORAGE_KEY, JSON.stringify(monthlyChecks));
-  localStorage.setItem(DELETED_RECORDS_STORAGE_KEY, JSON.stringify(deletedRecords));
+      persistLocalCollections();
       fileSaveRequestedDuringHydration = migrated;
       renderTodos();
       renderMemoItems();
@@ -906,6 +998,8 @@ async function hydrateFromFile() {
       fileSaveRequestedDuringHydration = true;
     }
   } catch {
+    fileHydrationFailed = true;
+    setSaveStatus("error", "读取失败 · 点击重试");
     showToast("暂时没读到本地数据文件，我会先使用浏览器里的数据。");
   } finally {
     fileHydrationPending = false;
@@ -922,8 +1016,10 @@ function downloadText(filename, content, type) {
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
+  document.body.append(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function exportData() {
@@ -938,17 +1034,42 @@ function exportData() {
 }
 
 async function importData(file) {
+  const MAX_IMPORT_BYTES = 25 * 1024 * 1024;
+  if (!file || file.size > MAX_IMPORT_BYTES) {
+    showToast("导入文件过大（超过 25MB），请检查所选备份文件。");
+    return;
+  }
   try {
     const data = JSON.parse(await file.text());
-    todos = (data.todos || []).map(normalizeTodo);
-    reminders = (data.reminders || []).map(normalizeReminder);
-    issueDrafts = (data.issueDrafts || []).map(normalizeIssueDraft);
-    memoItems = (data.memoItems || []).map(normalizeMemoItem);
-    projects = (data.projects || []).map(normalizeProject);
-    projectItems = (data.projectItems || []).map(normalizeProjectItem);
-    t46OpenEvents = (data.t46OpenEvents || []).map(normalizeT46OpenEvent);
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      showToast("导入失败：JSON 顶层结构必须是对象。");
+      return;
+    }
+    const recognizedKeys = ["todos", "reminders", "issueDrafts", "memoItems", "projects", "projectItems", "monthlyItems", "monthlyChecks"];
+    const hasRecognized = recognizedKeys.some((key) => key in data);
+    if (!hasRecognized) {
+      showToast("导入失败：文件中未找到工作台数据字段。");
+      return;
+    }
+    const incomingTodos = Array.isArray(data.todos) ? data.todos : [];
+    const incomingMemos = Array.isArray(data.memoItems) ? data.memoItems : [];
+    const incomingProjects = Array.isArray(data.projects) ? data.projects : [];
+    const incomingReminders = Array.isArray(data.reminders) ? data.reminders : [];
+    const ok = window.confirm(
+      `确认导入备份？将加载 ${incomingTodos.length} 条待办、${incomingMemos.length} 条备忘、${incomingProjects.length} 个项目、${incomingReminders.length} 条固定提醒，并覆盖当前数据。`,
+    );
+    if (!ok) return;
+    todos = incomingTodos.map(normalizeTodo);
+    reminders = incomingReminders.map(normalizeReminder);
+    issueDrafts = (Array.isArray(data.issueDrafts) ? data.issueDrafts : []).map(normalizeIssueDraft);
+    memoItems = incomingMemos.map(normalizeMemoItem);
+    projects = incomingProjects.map(normalizeProject);
+    projectItems = (Array.isArray(data.projectItems) ? data.projectItems : []).map(normalizeProjectItem);
+    t46OpenEvents = (Array.isArray(data.t46OpenEvents) ? data.t46OpenEvents : []).map(normalizeT46OpenEvent);
     if (Array.isArray(data.monthlyItems)) monthlyItems = data.monthlyItems.map(normalizeMonthlyItem);
-    if (data.monthlyChecks && typeof data.monthlyChecks === "object") monthlyChecks = normalizeMonthlyChecks(data.monthlyChecks);
+    if (data.monthlyChecks && typeof data.monthlyChecks === "object" && !Array.isArray(data.monthlyChecks)) {
+      monthlyChecks = normalizeMonthlyChecks(data.monthlyChecks);
+    }
     migrateInboxTodosToMemos();
     persistAll();
     renderMonthlyChecklist();
@@ -960,7 +1081,7 @@ async function importData(file) {
     render();
     showToast("数据已导入。");
   } catch {
-    showToast("导入失败，请确认选择的是工作台导出的 JSON 文件。");
+    showToast("导入失败，请确认选择的是工作台导出的有效 JSON 文件。");
   }
 }
 
@@ -1323,11 +1444,27 @@ function buildMarkdownExport(range) {
   return `${lines.join("\n").replace(/\n{3,}/g, "\n\n")}\n`;
 }
 
-function showToast(message) {
+function showToast(message, options = null) {
   clearTimeout(toastTimer);
-  toast.textContent = message;
+  toast.innerHTML = "";
+  const textSpan = document.createElement("span");
+  textSpan.textContent = message;
+  toast.append(textSpan);
+  if (options && typeof options.onUndo === "function") {
+    const undoBtn = document.createElement("button");
+    undoBtn.type = "button";
+    undoBtn.className = "toast-undo-btn";
+    undoBtn.textContent = options.undoLabel || "撤销";
+    undoBtn.addEventListener("click", () => {
+      clearTimeout(toastTimer);
+      toast.classList.remove("is-visible");
+      options.onUndo();
+    });
+    toast.append(undoBtn);
+  }
   toast.classList.add("is-visible");
-  toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 4200);
+  const duration = options && typeof options.onUndo === "function" ? 5600 : 4200;
+  toastTimer = setTimeout(() => toast.classList.remove("is-visible"), duration);
 }
 
 function makeField(labelText, control) {
@@ -1447,17 +1584,20 @@ function makeRichEditor(value, field, placeholder) {
   const toolbar = document.createElement("div");
   toolbar.className = "rich-toolbar";
   toolbar.innerHTML = `
-    <button type="button" data-rich-action="bold" title="加粗"><strong>B</strong></button>
-    <button type="button" data-rich-action="insertOrderedList" title="编号列表">1.</button>
-    <button type="button" data-rich-action="insertUnorderedList" title="项目符号">•</button>
-    <button type="button" data-rich-action="highlight" title="高亮">高亮</button>
-    <button type="button" data-rich-action="formatBlock" data-rich-value="blockquote" title="想法块">想法块</button>
-    <button type="button" data-rich-action="image" title="插入图片">图片</button>
+    <button class="rich-tool" type="button" data-rich-action="bold" title="加粗"><strong>B</strong></button>
+    <button class="rich-tool" type="button" data-rich-action="insertOrderedList" title="编号列表">1.</button>
+    <button class="rich-tool" type="button" data-rich-action="insertUnorderedList" title="项目符号">•</button>
+    <button class="rich-tool" type="button" data-rich-action="highlight" title="高亮">高亮</button>
+    <button class="rich-tool" type="button" data-rich-action="formatBlock" data-rich-value="blockquote" title="想法块">想法块</button>
+    <button class="rich-tool" type="button" data-rich-action="image" title="插入图片">图片</button>
   `;
 
   const editor = document.createElement("div");
   editor.className = "rich-input";
   editor.contentEditable = "true";
+  editor.setAttribute("role", "textbox");
+  editor.setAttribute("aria-multiline", "true");
+  editor.setAttribute("aria-label", field === "notes" ? "任务备注" : field === "ideas" ? "发散思考" : "富文本编辑");
   editor.dataset.todoRichField = field;
   editor.dataset.placeholder = placeholder;
   editor.innerHTML = normalizeRichValue(value);
@@ -1475,11 +1615,24 @@ function readFileAsDataUrl(file) {
   });
 }
 
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_MARKDOWN_BYTES = 2 * 1024 * 1024;
+
 async function storeIssueImage(file) {
-  const dataUrl = await readFileAsDataUrl(file);
+  if (file.size > MAX_IMAGE_BYTES) {
+    showToast(`图片「${file.name || "截图"}」超过 10MB，已跳过。`);
+    return null;
+  }
+  let dataUrl;
+  try {
+    dataUrl = await readFileAsDataUrl(file);
+  } catch {
+    showToast(`读取图片「${file.name || "截图"}」失败。`);
+    return null;
+  }
   if (canUseFileStorage()) {
     try {
-      const response = await fetch("/api/issue-assets", {
+      const response = await fetchWithTimeout("/api/issue-assets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1488,11 +1641,12 @@ async function storeIssueImage(file) {
           type: file.type,
           dataUrl,
         }),
-      });
+      }, 15000);
       if (response.ok) {
         const payload = await response.json();
         return payload.src || dataUrl;
       }
+      showToast("截图未能写入本地文件夹，已暂存在浏览器内。");
     } catch {
       showToast("截图暂时没有写进本地文件夹，我先保存在浏览器里。");
     }
@@ -1534,12 +1688,16 @@ async function insertImagesIntoRichEditor(editor, files) {
   const imageFiles = [...files].filter((file) => file.type.startsWith("image/"));
   if (!imageFiles.length) return false;
   editor.focus();
+  let inserted = 0;
   for (const file of imageFiles) {
     const src = await storeIssueImage(file);
+    if (!src) continue;
     insertHtmlAtCaret(editor, `<p><img src="${escapeHtml(src)}" alt="${escapeHtml(file.name || "备注图片")}"></p>`);
+    inserted += 1;
   }
+  if (!inserted) return false;
   editor.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertFromPaste" }));
-  showToast(`${imageFiles.length} 张图片已放进任务备注。`);
+  showToast(`${inserted} 张图片已放进任务备注。`);
   return true;
 }
 
@@ -1552,6 +1710,7 @@ async function addIssueFiles(files) {
 
   for (const file of imageFiles) {
     const src = await storeIssueImage(file);
+    if (!src) continue;
     pendingIssueScreenshots.push({
       id: uid(),
       name: file.name || "截图",
@@ -1706,24 +1865,28 @@ async function addMemoFiles(files) {
     return;
   }
 
+  let addedMarkdown = 0;
   for (const file of markdownFiles) {
-    await addPendingMemoMarkdownAttachment(file);
+    if (await addPendingMemoMarkdownAttachment(file)) addedMarkdown += 1;
   }
 
+  let addedImages = 0;
   for (const file of imageFiles) {
     const src = await storeIssueImage(file);
+    if (!src) continue;
     pendingMemoScreenshots.push({
       id: uid(),
       name: file.name || "截图",
       src,
       createdAt: new Date().toISOString(),
     });
+    addedImages += 1;
   }
   renderPendingMemoScreenshots();
   const parts = [];
-  if (markdownFiles.length) parts.push(`${markdownFiles.length} 个 Markdown 已作为附件待提交`);
-  if (imageFiles.length) parts.push(`${imageFiles.length} 张截图已放进备忘箱`);
-  showToast(parts.join("，") + "。");
+  if (addedMarkdown) parts.push(`${addedMarkdown} 个 Markdown 已作为附件待提交`);
+  if (addedImages) parts.push(`${addedImages} 张截图已放进备忘箱`);
+  if (parts.length) showToast(parts.join("，") + "。");
 }
 
 function isMarkdownFile(file) {
@@ -1741,8 +1904,18 @@ function readFileAsText(file) {
 }
 
 async function addPendingMemoMarkdownAttachment(file) {
-  const body = (await readFileAsText(file)).trim();
-  if (!body) return;
+  if (file.size > MAX_MARKDOWN_BYTES) {
+    showToast(`Markdown「${file.name || "附件"}」超过 2MB，已跳过。`);
+    return false;
+  }
+  let body = "";
+  try {
+    body = (await readFileAsText(file)).trim();
+  } catch {
+    showToast(`读取文件「${file.name || "附件"}」失败。`);
+    return false;
+  }
+  if (!body) return false;
   pendingMemoAttachments.push({
     id: uid(),
     name: file.name || "Markdown.md",
@@ -1750,6 +1923,7 @@ async function addPendingMemoMarkdownAttachment(file) {
     content: body,
     createdAt: new Date().toISOString(),
   });
+  return true;
 }
 
 function renderPendingMemoScreenshots() {
@@ -2032,17 +2206,22 @@ function makeMemoCard(item) {
     `
       : `
       <button class="small-button" type="button" data-memo-action="detail">${isExpanded ? "收起" : "详情"}</button>
-      <button class="small-button" type="button" data-memo-action="tomorrow">明天再看</button>
-      <button class="small-button" type="button" data-memo-action="nextWeek">下周再看</button>
-      <button class="small-button" type="button" data-memo-action="waiting">继续等</button>
-      <button class="small-button" type="button" data-memo-action="read">已读</button>
-      <button class="small-button" type="button" data-memo-action="project">加入项目</button>
       <button class="small-button" type="button" data-memo-action="todo">生成待办</button>
+      <button class="small-button" type="button" data-memo-action="project">加入项目</button>
       <button class="small-button" type="button" data-memo-action="issue">转为 Issue</button>
       <button class="small-button" type="button" data-memo-action="done">已整理</button>
-      <button class="small-button" type="button" data-memo-action="archive">归档</button>
-      <button class="small-button" type="button" data-memo-action="park">先放着</button>
-      <button class="small-button danger" type="button" data-memo-action="delete">删除</button>
+      <details class="memo-more-menu">
+        <summary class="small-button">更多 ▾</summary>
+        <div class="memo-more-panel">
+          <button class="small-button" type="button" data-memo-action="tomorrow">明天再看</button>
+          <button class="small-button" type="button" data-memo-action="nextWeek">下周再看</button>
+          <button class="small-button" type="button" data-memo-action="waiting">继续等</button>
+          <button class="small-button" type="button" data-memo-action="read">已读</button>
+          <button class="small-button" type="button" data-memo-action="archive">归档</button>
+          <button class="small-button" type="button" data-memo-action="park">先放着</button>
+          <button class="small-button danger" type="button" data-memo-action="delete">删除</button>
+        </div>
+      </details>
     `;
 
   card.append(main, actions);
@@ -3163,7 +3342,9 @@ function renderProjects() {
 }
 
 function archiveProject(project) {
-  if (!project || !window.confirm(`完成并归档“${project.name}”？归档后会从项目跟进和工作日历中隐藏。`)) return false;
+  if (!project) return false;
+  const prevStatus = project.status;
+  const prevArchivedAt = project.archivedAt || null;
   const now = new Date().toISOString();
   project.status = "已归档";
   project.archivedAt = now;
@@ -3177,13 +3358,29 @@ function archiveProject(project) {
   renderProjects();
   renderWorkCalendar();
   renderReview();
-  showToast("项目已完成并归档，可在日程回顾中查看。");
+  showToast(`已归档项目「${project.name}」。`, {
+    onUndo: () => {
+      project.status = prevStatus || "推进中";
+      project.archivedAt = prevArchivedAt;
+      project.updatedAt = new Date().toISOString();
+      selectedProjectId = project.id;
+      saveProjects();
+      renderProjects();
+      renderWorkCalendar();
+      renderReview();
+      showToast(`已撤销归档「${project.name}」。`);
+    },
+  });
   return true;
 }
 
 function makeTodoDetail(todo) {
   const detail = document.createElement("div");
   detail.className = "todo-detail";
+
+  const titleInput = makeInput("text", todo.title, "title");
+  titleInput.maxLength = 120;
+  const titleWrap = makeField("任务标题", titleInput);
 
   const detailGrid = document.createElement("div");
   detailGrid.className = "detail-grid";
@@ -3214,7 +3411,7 @@ function makeTodoDetail(todo) {
     makeField("发散思考", makeRichEditor(todo.ideas, "ideas", "随便写想法、风险、灵感、待讨论点；先不需要整理")),
   );
 
-  detail.append(detailGrid, secondGrid, writing);
+  detail.append(titleWrap, detailGrid, secondGrid, writing);
   if (todo.screenshots?.length) {
     const screenshots = document.createElement("div");
     screenshots.className = "todo-screenshots";
@@ -3291,14 +3488,180 @@ function reorderTodoWithinToday(draggedId, targetId, insertAfter = false) {
   return true;
 }
 
+let selectedInspectorTodoId = null;
+let inspectorEditMode = false;
+
+function isDesktopInspectorMode() {
+  return window.matchMedia("(min-width: 1025px)").matches;
+}
+
+window.matchMedia("(min-width: 1025px)").addEventListener("change", () => {
+  renderTodos();
+});
+
+function getActiveInspectorTodo() {
+  const nonArchived = todos.filter((item) => item && item.status !== "已归档");
+  const todayKey = toDateKey(new Date());
+  const todayItems = nonArchived.filter((item) => item.date === todayKey);
+  return (
+    (selectedInspectorTodoId && nonArchived.find((item) => item.id === selectedInspectorTodoId)) ||
+    todayItems.find((item) => item.status !== "已完成") ||
+    nonArchived.find((item) => item.status !== "已完成") ||
+    nonArchived[0] ||
+    null
+  );
+}
+
+function renderTodayInspector() {
+  const inspector = document.getElementById("todayInspector");
+  const notesBody = document.getElementById("inspectorNotesBody");
+  const thinkingBody = document.getElementById("inspectorThinkingBody");
+  const openBtn = document.getElementById("inspectorOpenDetailBtn");
+  const progressText = document.getElementById("todayProgressText");
+  const progressFill = document.getElementById("todayProgressFill");
+  const progressFooter = document.getElementById("todayProgressFooter");
+  if (!inspector || !notesBody || !thinkingBody) return;
+
+  const todayKey = toDateKey(new Date());
+  const nonArchived = todos.filter((item) => item && item.status !== "已归档");
+  const todayItems = nonArchived.filter((item) => item.date === todayKey);
+  if (progressText && progressFill && progressFooter) {
+    const total = todayItems.length;
+    const doneCount = todayItems.filter((item) => item.status === "已完成").length;
+    progressText.textContent = `今日完成 ${doneCount}/${total}`;
+    const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+    progressFill.style.width = `${pct}%`;
+    const motto = progressFooter.querySelector(".progress-motto");
+    if (motto) {
+      motto.textContent =
+        typeof window.__getStardustMotto === "function"
+          ? window.__getStardustMotto(total, doneCount)
+          : total > 0 && doneCount === total
+            ? "今日事已毕 · 一起去未来 ✦"
+            : "一起去未来";
+    }
+    progressFooter.classList.toggle("is-all-done", total > 0 && doneCount === total);
+    window.dispatchEvent(
+      new CustomEvent("stardust:progress", {
+        detail: { scope: "today", done: doneCount, total },
+      })
+    );
+  }
+
+  const target = getActiveInspectorTodo();
+  document.querySelectorAll(".todo-card.is-selected").forEach((el) => el.classList.remove("is-selected"));
+
+  if (!target) {
+    selectedInspectorTodoId = null;
+    inspectorEditMode = false;
+    delete inspector.dataset.inspectorTodoId;
+    notesBody.innerHTML = `<p class="inspector-placeholder">点击左侧任意任务，即可在这里聚焦查看或编辑它的备注与发散思考。</p>`;
+    thinkingBody.innerHTML = `<p class="inspector-placeholder">活动灵感、现场动线与复盘想法会沉淀在这里。</p>`;
+    if (openBtn) openBtn.hidden = true;
+    return;
+  }
+
+  selectedInspectorTodoId = target.id;
+  inspector.dataset.inspectorTodoId = target.id;
+  const matchedCard = document.querySelector(`.todo-card[data-id="${CSS.escape(target.id)}"]`);
+  if (matchedCard) matchedCard.classList.add("is-selected");
+
+  if (openBtn) {
+    openBtn.hidden = false;
+    openBtn.textContent = inspectorEditMode ? "完成编辑" : "就地编辑";
+    openBtn.onclick = () => {
+      inspectorEditMode = !inspectorEditMode;
+      renderTodayInspector();
+      if (inspectorEditMode) {
+        requestAnimationFrame(() => notesBody.querySelector(".rich-input")?.focus());
+      }
+    };
+  }
+
+  if (inspectorEditMode) {
+    notesBody.innerHTML = "";
+    thinkingBody.innerHTML = "";
+
+    const titleInput = makeInput("text", target.title, "title");
+    titleInput.className = "inspector-title-input";
+    titleInput.maxLength = 120;
+    titleInput.setAttribute("aria-label", "任务标题");
+    titleInput.placeholder = "输入任务标题";
+
+    const metaGrid = document.createElement("div");
+    metaGrid.className = "inspector-meta-grid";
+    const reviewLabel = document.createElement("label");
+    reviewLabel.className = "check-field";
+    const reviewCheck = document.createElement("input");
+    reviewCheck.type = "checkbox";
+    reviewCheck.checked = Boolean(target.needsReview);
+    reviewCheck.dataset.todoField = "needsReview";
+    reviewLabel.append(reviewCheck, document.createTextNode("需要复盘"));
+
+    metaGrid.append(
+      makeField("负责人", makeInput("text", target.owner, "owner")),
+      makeField("状态", makeSelect(target.status, "status", statusOptions)),
+      makeField("日期", makeInput("date", target.date, "date")),
+      makeField("优先级", makeSelect(target.priority, "priority", priorityOptions)),
+      makeField("业务板块", makeSelect(target.module, "module", moduleOptions)),
+      reviewLabel,
+    );
+
+    const notesWrap = document.createElement("div");
+    notesWrap.className = "inspector-editor-block";
+    notesWrap.append(makeRichEditor(target.notes, "notes", "进展、链接、对接信息、下一步动作都可以写在这里"));
+
+    notesBody.append(titleInput, metaGrid, notesWrap);
+    if (target.screenshots?.length) {
+      const shots = document.createElement("div");
+      shots.className = "inspector-screenshots";
+      shots.append(makeScreenshotGallery(target.screenshots));
+      notesBody.append(shots);
+    }
+
+    const ideasWrap = document.createElement("div");
+    ideasWrap.className = "inspector-editor-block";
+    ideasWrap.append(makeRichEditor(target.ideas, "ideas", "随便写想法、风险、灵感、待讨论点；先不需要整理"));
+    thinkingBody.append(ideasWrap);
+    return;
+  }
+
+  const safeNotesHtml = normalizeRichValue(target.notes || "");
+  const safeIdeasHtml = normalizeRichValue(target.ideas || "");
+  const notesText = richToText(safeNotesHtml);
+  const ideasText = richToText(safeIdeasHtml);
+  const hasNotesContent = Boolean(notesText) || /<img\b/i.test(safeNotesHtml);
+  const hasIdeasContent = Boolean(ideasText) || /<img\b/i.test(safeIdeasHtml);
+  const safeTitle = escapeHtml(target.title || "");
+
+  notesBody.innerHTML = hasNotesContent
+    ? `<p class="inspector-task-name">${safeTitle}</p><div class="inspector-rich">${safeNotesHtml}</div>`
+    : `<p class="inspector-task-name">${safeTitle}</p><p class="inspector-placeholder">暂无任务备注，点击「就地编辑」即可记录。</p>`;
+
+  if (target.screenshots?.length) {
+    const shots = document.createElement("div");
+    shots.className = "inspector-screenshots";
+    shots.append(makeScreenshotGallery(target.screenshots));
+    notesBody.append(shots);
+  }
+
+  thinkingBody.innerHTML = hasIdeasContent
+    ? `<div class="inspector-rich">${safeIdeasHtml}</div>`
+    : `<p class="inspector-placeholder">暂无发散思考，随时补充你的活动灵感。</p>`;
+}
+
 function makeTodoCard(todo) {
   const item = document.createElement("li");
-  const isExpanded = todo.id === expandedTodoId;
-  item.className = `todo-card${todo.status === "已完成" ? " is-done" : ""}${isExpanded ? " is-expanded" : ""}`;
+  const isExpanded = !isDesktopInspectorMode() && todo.id === expandedTodoId;
+  const isSelected = todo.id === selectedInspectorTodoId;
+  item.className = `todo-card${todo.status === "已完成" ? " is-done" : ""}${isExpanded ? " is-expanded" : ""}${isSelected ? " is-selected" : ""}`;
   item.dataset.id = todo.id;
   if (canReorderTodo(todo)) {
     item.draggable = true;
   }
+
+  const topRow = document.createElement("div");
+  topRow.className = "todo-card-top";
 
   const main = document.createElement("div");
   main.className = "todo-main";
@@ -3310,22 +3673,22 @@ function makeTodoCard(todo) {
   const meta = document.createElement("div");
   meta.className = "todo-meta";
 
+  const isUrgent = todo.priority === "今天必须";
+  const ownerName = todo.owner || "我";
   const fields = [
-    { text: todo.priority, className: "pill priority" },
-    todo.projectId ? { text: `项目：${getProjectById(todo.projectId)?.name || "未归属项目"}`, className: "pill priority" } : null,
-    { text: todo.module, className: "pill" },
-    { text: todo.owner || "我", className: "pill" },
-    { text: todo.status, className: "pill" },
+    { text: todo.priority, className: isUrgent ? "pill priority" : "meta-text" },
+    todo.projectId ? { text: `项目：${getProjectById(todo.projectId)?.name || "未归属项目"}`, className: "pill subtle" } : null,
+    todo.needsReview ? { text: "需复盘", className: "pill priority" } : null,
+    ownerName !== "我" ? { text: ownerName, className: "pill subtle" } : null,
+    { text: todo.module, className: "meta-text" },
+    todo.status && todo.status !== "未开始" ? { text: todo.status, className: "meta-text" } : null,
   ].filter(Boolean);
-  if (todo.needsReview) {
-    fields.push({ text: "需复盘", className: "pill priority" });
-  }
 
   for (const field of fields) {
-    const pill = document.createElement("span");
-    pill.className = field.className;
-    pill.textContent = field.text;
-    meta.append(pill);
+    const tag = document.createElement("span");
+    tag.className = field.className;
+    tag.textContent = field.text;
+    meta.append(tag);
   }
 
   main.append(title, meta);
@@ -3334,23 +3697,27 @@ function makeTodoCard(todo) {
   actions.className = "actions";
   const reorderActions = canReorderTodo(todo)
     ? `
-      <span class="small-button drag-handle" draggable="true" role="button" title="按住拖动排序" aria-label="按住拖动排序">↕</span>
+      <span class="small-button drag-handle" draggable="true" tabindex="0" role="button" title="按住拖动或按上下方向键排序" aria-label="按住拖动或按上下方向键排序">↕</span>
     `
     : "";
+  const detailLabel = isDesktopInspectorMode()
+    ? (isSelected && inspectorEditMode ? "编辑中" : "编辑")
+    : (isExpanded ? "收起" : "详情");
   actions.innerHTML = todo.date
     ? `
       ${reorderActions}
-      <button class="small-button" type="button" data-todo-action="detail" title="展开备注">${isExpanded ? "收起" : "详情"}</button>
+      <button class="small-button" type="button" data-todo-action="detail" title="编辑备注与详情">${detailLabel}</button>
       <button class="small-button" type="button" data-todo-action="done" title="完成">${todo.status === "已完成" ? "撤回" : "完成"}</button>
       <button class="small-button danger" type="button" data-todo-action="delete" title="删除">删除</button>
     `
     : `
-      <button class="small-button" type="button" data-todo-action="detail" title="展开备注">${isExpanded ? "收起" : "详情"}</button>
+      <button class="small-button" type="button" data-todo-action="detail" title="编辑备注与详情">${detailLabel}</button>
       <button class="small-button" type="button" data-todo-action="today" title="放到今天">今天</button>
       <button class="small-button danger" type="button" data-todo-action="delete" title="删除">删除</button>
     `;
 
-  item.append(main, actions);
+  topRow.append(main, actions);
+  item.append(topRow);
   if (isExpanded) {
     item.append(makeTodoDetail(todo));
   }
@@ -3617,6 +3984,7 @@ function renderTodos() {
   }
 
   renderDailyCloseout();
+  renderTodayInspector();
   renderReview();
 }
 
@@ -3643,11 +4011,19 @@ function makeReviewRow(todo) {
 
   const meta = document.createElement("div");
   meta.className = "todo-meta";
-  for (const text of [todo.priority, todo.module, todo.owner || "我", todo.status]) {
-    const pill = document.createElement("span");
-    pill.className = text === todo.priority ? "pill priority" : "pill";
-    pill.textContent = text;
-    meta.append(pill);
+  const ownerName = todo.owner || "我";
+  const reviewFields = [
+    { text: todo.priority, className: todo.priority === "今天必须" ? "pill priority" : "meta-text" },
+    todo.needsReview ? { text: "需复盘", className: "pill priority" } : null,
+    ownerName !== "我" ? { text: ownerName, className: "pill subtle" } : null,
+    { text: todo.module, className: "meta-text" },
+    { text: todo.status, className: "meta-text" },
+  ].filter(Boolean);
+  for (const field of reviewFields) {
+    const tag = document.createElement("span");
+    tag.className = field.className;
+    tag.textContent = field.text;
+    meta.append(tag);
   }
 
   main.append(title, meta);
@@ -3754,7 +4130,16 @@ function renderReview() {
 
   reviewList.innerHTML = "";
   reviewEmpty.style.display = items.length ? "none" : "block";
+  let lastDateKey = null;
   for (const todo of items) {
+    const dateKey = todo.date || "__unscheduled__";
+    if (dateKey !== lastDateKey) {
+      const heading = document.createElement("div");
+      heading.className = "review-date-heading";
+      heading.textContent = todo.date ? formatDateLabel(todo.date) : "待分配";
+      reviewList.append(heading);
+      lastDateKey = dateKey;
+    }
     reviewList.append(makeReviewRow(todo));
   }
 }
@@ -4027,10 +4412,14 @@ function renderLarkCalendar() {
   }
 
   if (larkCalendarStatus === "error") {
-    larkCalendarCount.textContent = "未授权";
+    larkCalendarCount.textContent = "未连接";
     larkCalendarEmpty.style.display = "block";
-    larkCalendarEmpty.querySelector("p").textContent = "还不能读取飞书日程。";
-    larkCalendarEmpty.querySelector("span").textContent = larkCalendarHint || larkCalendarError || "需要先授权读取飞书日历。";
+    larkCalendarEmpty.querySelector("p").textContent = "暂未连接飞书日历";
+    const rawLarkMsg = larkCalendarHint || larkCalendarError || "";
+    const friendlyLarkMsg = /lark-cli/i.test(rawLarkMsg)
+      ? "本地可选功能，未配置飞书同步时不影响日常待办使用。"
+      : (rawLarkMsg || "完成授权后这里会自动同步今天的日程。");
+    larkCalendarEmpty.querySelector("span").textContent = friendlyLarkMsg;
     return;
   }
 
@@ -4049,7 +4438,8 @@ async function fetchLarkCalendar() {
   larkCalendarStatus = "loading";
   renderLarkCalendar();
   try {
-    const response = await fetch(`/api/lark-calendar/today?date=${toDateKey(new Date())}`, { cache: "no-store" });
+    const response = await fetchWithTimeout(`/api/lark-calendar/today?date=${toDateKey(new Date())}`, { cache: "no-store" }, 22000);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     if (!data.ok) {
       larkCalendarEvents = [];
@@ -4064,9 +4454,11 @@ async function fetchLarkCalendar() {
     larkCalendarError = "";
     larkCalendarHint = "";
     renderLarkCalendar();
-  } catch {
+  } catch (error) {
     larkCalendarStatus = "error";
-    larkCalendarError = "暂时没读到飞书日程，请确认本地工作台服务在运行。";
+    larkCalendarError = error?.name === "AbortError"
+      ? "读取飞书日程超时，请稍后点刷新重试。"
+      : "暂时没读到飞书日程，请确认本地工作台服务在运行。";
     larkCalendarHint = "";
     renderLarkCalendar();
   }
@@ -4111,7 +4503,6 @@ function notify(reminder, time = null) {
     new Notification(title, { body });
   }
   showToast(body);
-  playChime();
   showAlarm(reminder, time || getReminderTimes(reminder)[0] || "");
   showDesktopPetAlarm(reminder, time || "");
 }
@@ -4126,35 +4517,50 @@ function notifyDailyCloseout(count) {
   playChime();
 }
 
+let alarmReturnFocusEl = null;
+
 function playChime() {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!AudioContext) return;
-
-  const context = new AudioContext();
-  const gain = context.createGain();
-  const oscillator = context.createOscillator();
-  oscillator.type = "sine";
-  oscillator.frequency.value = 880;
-  gain.gain.setValueAtTime(0.001, context.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.16, context.currentTime + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.42);
-  oscillator.connect(gain);
-  gain.connect(context.destination);
-  oscillator.start();
-  oscillator.stop(context.currentTime + 0.46);
+  try {
+    const context = new AudioContext();
+    const gain = context.createGain();
+    const oscillator = context.createOscillator();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 880;
+    gain.gain.setValueAtTime(0.001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.16, context.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.42);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.onended = () => {
+      context.close?.().catch?.(() => {});
+    };
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.46);
+  } catch {
+    // Ignore autoplay or AudioContext limits in restricted browsers.
+  }
 }
 
 function showAlarm(reminder, time) {
   if (!alarmOverlay || !alarmTitle || !alarmBody || !alarmTime) return;
+  if (alarmOverlay.hidden && document.activeElement instanceof HTMLElement) {
+    alarmReturnFocusEl = document.activeElement;
+  }
   activeAlarm = {
     reminderId: reminder.id,
     time,
   };
   alarmTitle.textContent = reminder.task;
-  alarmTime.textContent = time ? `提醒时间：${time}` : "固定提醒";
-  alarmBody.textContent = "如果现在不方便处理，可以先稍后提醒；处理完就点已完成。";
+  alarmTime.textContent = time ? `✦ 星光提醒 · ${time}` : "✦ 固定提醒";
+  alarmBody.textContent = "如果不方便立刻处理，可以先稍后提醒；忙完记得回来点已完成。";
   alarmOverlay.hidden = false;
+  window.dispatchEvent(new CustomEvent("stardust:alarm", { detail: { open: true } }));
   playChime();
+  requestAnimationFrame(() => {
+    alarmOverlay.querySelector('button[data-alarm-action="done"]')?.focus();
+  });
 }
 
 function showDesktopPetAlarm(reminder, time) {
@@ -4172,7 +4578,27 @@ function showDesktopPetAlarm(reminder, time) {
 function closeAlarm() {
   activeAlarm = null;
   if (alarmOverlay) alarmOverlay.hidden = true;
+  window.dispatchEvent(new CustomEvent("stardust:alarm", { detail: { open: false } }));
+  if (alarmReturnFocusEl && alarmReturnFocusEl.isConnected) {
+    alarmReturnFocusEl.focus();
+  }
+  alarmReturnFocusEl = null;
 }
+
+alarmOverlay?.addEventListener("keydown", (event) => {
+  if (event.key !== "Tab" || alarmOverlay.hidden) return;
+  const focusable = Array.from(alarmOverlay.querySelectorAll('button:not(:disabled), [href], input:not(:disabled), [tabindex]:not([tabindex="-1"])'));
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
 
 function snoozeReminder(reminder, time, minutes) {
   const now = new Date();
@@ -4582,25 +5008,68 @@ document.addEventListener("click", (event) => {
     const action = calendarActionButton.dataset.calendarAction;
     let project = getProjectById(calendarSelectedProjectId);
 
-    if (action === "new-project") {
-      const name = window.prompt("新项目名称", "");
-      if (!name?.trim()) return;
-      const created = normalizeProject({
-        id: uid(),
-        name: name.trim(),
-        owner: "我",
-        type: "运营项目",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+    function openCalendarInlinePrompt(placeholder, initialValue, submitLabel, onSubmit) {
+      const toolbar = document.querySelector("#workCalendarView .calendar-toolbar");
+      if (!toolbar) return;
+      document.querySelector("#workCalendarView .calendar-inline-prompt")?.remove();
+      const bar = document.createElement("form");
+      bar.className = "calendar-inline-prompt";
+      const input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = placeholder;
+      input.value = initialValue || "";
+      input.maxLength = 80;
+      const okBtn = document.createElement("button");
+      okBtn.type = "submit";
+      okBtn.className = "primary-button";
+      okBtn.textContent = submitLabel || "确认";
+      const cancelBtn = document.createElement("button");
+      cancelBtn.type = "button";
+      cancelBtn.className = "small-button";
+      cancelBtn.textContent = "取消";
+      cancelBtn.addEventListener("click", () => bar.remove());
+      bar.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          bar.remove();
+        }
       });
-      projects.push(created);
-      calendarSelectedProjectId = created.id;
-      calendarExpandedProjectId = created.id;
-      selectedProjectId = created.id;
-      saveProjects();
-      renderProjects();
-      renderWorkCalendar();
-      showToast("项目已创建，并同步到项目跟进。");
+      bar.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const val = input.value.trim();
+        if (!val) {
+          showToast("名称不能为空。");
+          input.focus();
+          return;
+        }
+        bar.remove();
+        onSubmit(val);
+      });
+      bar.append(input, okBtn, cancelBtn);
+      toolbar.after(bar);
+      input.focus();
+      input.select();
+    }
+
+    if (action === "new-project") {
+      openCalendarInlinePrompt("输入新项目名称，例如：5.20 酒吧联名活动", "", "创建项目", (name) => {
+        const created = normalizeProject({
+          id: uid(),
+          name,
+          owner: "我",
+          type: "运营项目",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+        projects.push(created);
+        calendarSelectedProjectId = created.id;
+        calendarExpandedProjectId = created.id;
+        selectedProjectId = created.id;
+        saveProjects();
+        renderProjects();
+        renderWorkCalendar();
+        showToast("项目已创建，并同步到项目跟进。");
+      });
       return;
     }
 
@@ -4615,17 +5084,17 @@ document.addEventListener("click", (event) => {
         showToast("先选择或新建一个项目。");
         return;
       }
-      const name = window.prompt("新阶段名称", "");
-      if (!name?.trim()) return;
-      project.stages = normalizeProjectStages([
-        ...(project.stages || []),
-        createProjectStage(name.trim(), project.stages?.length || 0),
-      ]);
-      project.updatedAt = new Date().toISOString();
-      saveProjects();
-      renderProjects();
-      renderWorkCalendar();
-      showToast("阶段已新增。");
+      openCalendarInlinePrompt("输入新阶段名称，例如：场地确认", "", "新增阶段", (name) => {
+        project.stages = normalizeProjectStages([
+          ...(project.stages || []),
+          createProjectStage(name, project.stages?.length || 0),
+        ]);
+        project.updatedAt = new Date().toISOString();
+        saveProjects();
+        renderProjects();
+        renderWorkCalendar();
+        showToast("阶段已新增。");
+      });
       return;
     }
 
@@ -4633,15 +5102,15 @@ document.addEventListener("click", (event) => {
       if (!project) return;
       const stage = (project.stages || []).find((item) => item.id === calendarActionButton.dataset.stageId);
       if (!stage) return;
-      const name = window.prompt("阶段名称", stage.name);
-      if (!name?.trim()) return;
-      stage.name = name.trim();
-      project.updatedAt = new Date().toISOString();
-      saveProjects();
-      renderTodos();
-      renderProjects();
-      renderWorkCalendar();
-      showToast("阶段名称已更新。");
+      openCalendarInlinePrompt("修改阶段名称", stage.name, "保存名称", (name) => {
+        stage.name = name;
+        project.updatedAt = new Date().toISOString();
+        saveProjects();
+        renderTodos();
+        renderProjects();
+        renderWorkCalendar();
+        showToast("阶段名称已更新。");
+      });
       return;
     }
 
@@ -4654,12 +5123,10 @@ document.addEventListener("click", (event) => {
         showToast("至少保留一个阶段。");
         return;
       }
+      const prevStages = (project.stages || []).map((s) => ({ ...s }));
       const fallbackStageId = getStageFallbackId(project, stageId);
       const affectedNodes = getProjectNodes(project.id).filter((node) => (node.stageId || project.stages[0]?.id) === stageId);
-      const message = affectedNodes.length
-        ? `删除“${stage.name}”？其中 ${affectedNodes.length} 个节点会移动到其他阶段。`
-        : `删除“${stage.name}”？`;
-      if (!window.confirm(message)) return;
+      const prevNodeStages = affectedNodes.map((n) => ({ id: n.id, stageId: n.stageId }));
       project.stages = normalizeProjectStages(project.stages.filter((item) => item.id !== stageId));
       for (const node of affectedNodes) {
         node.stageId = fallbackStageId;
@@ -4671,7 +5138,22 @@ document.addEventListener("click", (event) => {
       renderTodos();
       renderProjects();
       renderWorkCalendar();
-      showToast(affectedNodes.length ? "阶段已删除，节点已移动。" : "阶段已删除。");
+      showToast(affectedNodes.length ? `阶段「${stage.name}」已删除，节点已移至其他阶段。` : `阶段「${stage.name}」已删除。`, {
+        onUndo: () => {
+          project.stages = prevStages;
+          for (const entry of prevNodeStages) {
+            const node = todos.find((t) => t.id === entry.id);
+            if (node) node.stageId = entry.stageId;
+          }
+          project.updatedAt = new Date().toISOString();
+          saveTodos();
+          saveProjects();
+          renderTodos();
+          renderProjects();
+          renderWorkCalendar();
+          showToast(`已恢复阶段「${stage.name}」。`);
+        },
+      });
       return;
     }
 
@@ -4744,7 +5226,7 @@ document.addEventListener("click", (event) => {
     }
 
     if (action === "delete-node") {
-      if (!window.confirm("删除这个节点？")) return;
+      const snapshot = { ...currentNode };
       markDeleted("todos", currentNode.id);
       todos = todos.filter((todo) => todo.id !== currentNode.id);
       selectedCalendarNodeId = null;
@@ -4752,7 +5234,18 @@ document.addEventListener("click", (event) => {
       renderTodos();
       renderProjects();
       renderWorkCalendar();
-      showToast("节点已删除。");
+      showToast("节点已删除。", {
+        onUndo: () => {
+          reviveSnapshotFromTombstone("todos", snapshot);
+          todos.push(snapshot);
+          selectedCalendarNodeId = snapshot.id;
+          saveTodos();
+          renderTodos();
+          renderProjects();
+          renderWorkCalendar();
+          showToast("已恢复节点。");
+        },
+      });
       return;
     }
   }
@@ -5032,10 +5525,19 @@ document.addEventListener("click", (event) => {
 
     const action = memoButton.dataset.memoAction;
     if (action === "delete") {
+      const snapshot = { ...item };
       markDeleted("memoItems", item.id);
       memoItems = memoItems.filter((memo) => memo.id !== item.id);
       if (expandedMemoId === item.id) expandedMemoId = null;
-      showToast("备忘已删除。");
+      showToast("备忘已删除。", {
+        onUndo: () => {
+          reviveSnapshotFromTombstone("memoItems", snapshot);
+          memoItems.unshift(snapshot);
+          saveMemoItems();
+          renderMemoItems();
+          showToast("已恢复备忘。");
+        },
+      });
     }
 
     if (action === "detail") {
@@ -5097,34 +5599,78 @@ document.addEventListener("click", (event) => {
     }
 
     if (action === "project") {
-      const defaultName = projects[0]?.name || item.module || item.category || "";
-      const projectName = window.prompt("加入哪个项目？输入已有项目名，或直接输入新项目名。", defaultName);
-      const project = ensureQuickProject(projectName);
-      if (!project) {
-        showToast("没有填写项目名，先不移动。");
+      const existingPicker = card.querySelector(".memo-project-picker");
+      if (existingPicker) {
+        existingPicker.remove();
         return;
       }
-      let projectItem = item.projectItemId ? projectItems.find((entry) => entry.id === item.projectItemId) : null;
-      if (!projectItem) {
-        projectItem = createProjectItemFromMemo(item, project.id);
-        projectItems.push(projectItem);
-      } else {
-        projectItem.projectId = project.id;
-        projectItem.updatedAt = new Date().toISOString();
+      const picker = document.createElement("div");
+      picker.className = "memo-project-picker";
+      const activeProjects = getActiveProjects();
+      const select = document.createElement("select");
+      select.setAttribute("aria-label", "选择已有项目");
+      const emptyOpt = document.createElement("option");
+      emptyOpt.value = "";
+      emptyOpt.textContent = activeProjects.length ? "选择已有项目…" : "暂无已有项目";
+      select.append(emptyOpt);
+      for (const p of activeProjects) {
+        const opt = document.createElement("option");
+        opt.value = p.name;
+        opt.textContent = p.name;
+        select.append(opt);
       }
-      item.projectId = project.id;
-      item.projectItemId = projectItem.id;
-      item.status = "已整理";
-      item.logs = [
-        ...(item.logs || []),
-        { id: uid(), text: `已加入项目：${project.name}`, createdAt: new Date().toISOString() },
-      ];
-      item.updatedAt = new Date().toISOString();
-      project.updatedAt = new Date().toISOString();
-      selectedProjectId = project.id;
-      saveProjects();
-      saveProjectItems();
-      showToast(`已加入项目：${project.name}。`);
+      const newInput = document.createElement("input");
+      newInput.type = "text";
+      newInput.placeholder = "或输入新项目名";
+      newInput.maxLength = 80;
+      const confirmBtn = document.createElement("button");
+      confirmBtn.type = "button";
+      confirmBtn.className = "primary-button";
+      confirmBtn.textContent = "确认加入";
+      const cancelBtn = document.createElement("button");
+      cancelBtn.type = "button";
+      cancelBtn.className = "small-button";
+      cancelBtn.textContent = "取消";
+
+      cancelBtn.addEventListener("click", () => picker.remove());
+      confirmBtn.addEventListener("click", () => {
+        const projectName = newInput.value.trim() || select.value.trim();
+        const project = ensureQuickProject(projectName);
+        if (!project) {
+          showToast("先选择一个已有项目，或输入新项目名。");
+          return;
+        }
+        let projectItem = item.projectItemId ? projectItems.find((entry) => entry.id === item.projectItemId) : null;
+        if (!projectItem) {
+          projectItem = createProjectItemFromMemo(item, project.id);
+          projectItems.push(projectItem);
+        } else {
+          projectItem.projectId = project.id;
+          projectItem.updatedAt = new Date().toISOString();
+        }
+        item.projectId = project.id;
+        item.projectItemId = projectItem.id;
+        item.status = "已整理";
+        item.logs = [
+          ...(item.logs || []),
+          { id: uid(), text: `已加入项目：${project.name}`, createdAt: new Date().toISOString() },
+        ];
+        item.updatedAt = new Date().toISOString();
+        project.updatedAt = new Date().toISOString();
+        selectedProjectId = project.id;
+        saveProjects();
+        saveProjectItems();
+        saveMemoItems();
+        renderMemoItems();
+        renderProjects();
+        renderTodos();
+        showToast(`已加入项目：${project.name}。`);
+      });
+
+      picker.append(select, newInput, confirmBtn, cancelBtn);
+      card.querySelector(".memo-actions")?.after(picker);
+      newInput.focus();
+      return;
     }
 
     if (action === "archive") {
@@ -5168,9 +5714,18 @@ document.addEventListener("click", (event) => {
     if (!issue) return;
 
     if (issueButton.dataset.issueAction === "delete") {
+      const snapshot = { ...issue };
       markDeleted("issueDrafts", issue.id);
       issueDrafts = issueDrafts.filter((item) => item.id !== issue.id);
-      showToast("待写 Issue 已删除。");
+      showToast("待写 Issue 已删除。", {
+        onUndo: () => {
+          reviveSnapshotFromTombstone("issueDrafts", snapshot);
+          issueDrafts.unshift(snapshot);
+          saveIssueDrafts();
+          renderIssueDrafts();
+          showToast("已恢复待写 Issue。");
+        },
+      });
     }
 
     if (issueButton.dataset.issueAction === "todo") {
@@ -5239,28 +5794,68 @@ document.addEventListener("click", (event) => {
   if (reviewButton) {
     switchTab("today");
     expandedTodoId = reviewButton.dataset.reviewOpen;
+    selectedInspectorTodoId = reviewButton.dataset.reviewOpen;
+    inspectorEditMode = false;
     renderTodos();
     requestAnimationFrame(() => {
-      document.querySelector(`.todo-card[data-id="${expandedTodoId}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.querySelector(`.todo-card[data-id="${CSS.escape(expandedTodoId)}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
     return;
   }
 
   const button = event.target.closest("button[data-todo-action]");
-  if (!button) return;
+  if (!button) {
+    const clickedCard = event.target.closest(".todo-card[data-id]");
+    if (clickedCard && !event.target.closest("button, input, select, textarea, .rich-editor, a")) {
+      selectedInspectorTodoId = clickedCard.dataset.id;
+      if (inspectorEditMode) {
+        renderTodos();
+      } else {
+        renderTodayInspector();
+      }
+    }
+    return;
+  }
 
   const card = button.closest(".todo-card");
   const todo = todos.find((item) => item.id === card.dataset.id);
   if (!todo) return;
 
   if (button.dataset.todoAction === "delete") {
+    const snapshot = { ...todo };
     markDeleted("todos", todo.id);
     todos = todos.filter((item) => item.id !== todo.id);
     if (expandedTodoId === todo.id) expandedTodoId = null;
-    showToast("Todo 已删除。");
+    if (selectedInspectorTodoId === todo.id) {
+      selectedInspectorTodoId = null;
+      inspectorEditMode = false;
+    }
+    showToast("Todo 已删除。", {
+      onUndo: () => {
+        reviveSnapshotFromTombstone("todos", snapshot);
+        todos.unshift(snapshot);
+        selectedInspectorTodoId = snapshot.id;
+        saveTodos();
+        renderTodos();
+        showToast("已恢复 Todo。");
+      },
+    });
   }
 
   if (button.dataset.todoAction === "detail") {
+    if (isDesktopInspectorMode()) {
+      if (selectedInspectorTodoId === todo.id) {
+        inspectorEditMode = !inspectorEditMode;
+      } else {
+        selectedInspectorTodoId = todo.id;
+        inspectorEditMode = true;
+      }
+      renderTodos();
+      if (inspectorEditMode) {
+        requestAnimationFrame(() => document.querySelector("#inspectorNotesBody .rich-input")?.focus());
+      }
+      return;
+    }
     expandedTodoId = expandedTodoId === todo.id ? null : todo.id;
   }
 
@@ -5284,6 +5879,25 @@ document.addEventListener("click", (event) => {
 
   saveTodos();
   renderTodos();
+});
+
+document.addEventListener("keydown", (event) => {
+  const handle = event.target.closest(".drag-handle");
+  if (!handle) return;
+  if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+  const card = handle.closest(".todo-card[data-id]");
+  const todo = todos.find((item) => item.id === card?.dataset.id);
+  if (!todo) return;
+  event.preventDefault();
+  const moved = moveTodoWithinToday(todo, event.key === "ArrowUp" ? -1 : 1);
+  if (moved) {
+    saveTodos();
+    renderTodos();
+    requestAnimationFrame(() => {
+      document.querySelector(`.todo-card[data-id="${CSS.escape(todo.id)}"] .drag-handle`)?.focus();
+    });
+    showToast("任务顺序已调整。");
+  }
 });
 
 document.addEventListener("dragstart", (event) => {
@@ -5341,9 +5955,23 @@ document.addEventListener("drop", (event) => {
   }
 });
 
-document.addEventListener("dragend", () => {
+function clearDragState() {
   draggedTodoId = null;
-  document.querySelectorAll(".todo-card").forEach((item) => item.classList.remove("is-dragging", "is-drop-before", "is-drop-after"));
+  document.querySelectorAll(".todo-card.is-dragging, .todo-card.is-drop-before, .todo-card.is-drop-after").forEach((item) => {
+    item.classList.remove("is-dragging", "is-drop-before", "is-drop-after");
+  });
+  document.querySelectorAll(".is-dragging-image, .image-drop-zone.is-dragging").forEach((el) => {
+    el.classList.remove("is-dragging-image", "is-dragging");
+  });
+}
+
+document.addEventListener("dragend", clearDragState);
+window.addEventListener("blur", clearDragState);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") clearDragState();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && draggedTodoId) clearDragState();
 });
 
 document.addEventListener("input", (event) => {
@@ -5423,9 +6051,10 @@ document.addEventListener("input", (event) => {
 
   const richField = event.target.closest("[data-todo-rich-field]");
   if (richField) {
-    const card = richField.closest(".todo-card");
-    if (!card) return;
-    const todo = todos.find((item) => item.id === card.dataset.id);
+    const host = richField.closest(".todo-card, [data-inspector-todo-id]");
+    const todoId = host?.dataset.id || host?.dataset.inspectorTodoId;
+    if (!todoId) return;
+    const todo = todos.find((item) => item.id === todoId);
     if (!todo) return;
 
     todo[richField.dataset.todoRichField] = sanitizeRichHtml(richField.innerHTML);
@@ -5437,13 +6066,23 @@ document.addEventListener("input", (event) => {
   const field = event.target.closest("[data-todo-field]");
   if (!field) return;
 
-  const card = field.closest(".todo-card");
-  if (!card) return;
-  const todo = todos.find((item) => item.id === card.dataset.id);
+  const host = field.closest(".todo-card, [data-inspector-todo-id]");
+  const todoId = host?.dataset.id || host?.dataset.inspectorTodoId;
+  if (!todoId) return;
+  const todo = todos.find((item) => item.id === todoId);
   if (!todo) return;
 
-  if (["notes", "ideas", "owner"].includes(field.dataset.todoField)) {
-    todo[field.dataset.todoField] = field.value;
+  if (["notes", "ideas", "owner", "title"].includes(field.dataset.todoField)) {
+    if (field.dataset.todoField === "title") {
+      const nextTitle = field.value.trim();
+      if (nextTitle) {
+        todo.title = nextTitle;
+        const cardTitle = document.querySelector(`.todo-card[data-id="${CSS.escape(todo.id)}"] .todo-title`);
+        if (cardTitle) cardTitle.textContent = nextTitle;
+      }
+    } else {
+      todo[field.dataset.todoField] = field.value;
+    }
     saveTodos();
     renderReview();
   }
@@ -5472,7 +6111,22 @@ document.addEventListener("click", (event) => {
   }
 
   if (action === "highlight") {
-    document.execCommand("backColor", false, "#fff1a8");
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount && !sel.isCollapsed && editor.contains(sel.anchorNode)) {
+      const range = sel.getRangeAt(0);
+      const existingMark = sel.anchorNode.parentElement?.closest("mark");
+      if (existingMark && editor.contains(existingMark)) {
+        existingMark.replaceWith(document.createTextNode(existingMark.textContent || ""));
+      } else {
+        const mark = document.createElement("mark");
+        mark.append(range.extractContents());
+        range.insertNode(mark);
+        sel.removeAllRanges();
+        const nextRange = document.createRange();
+        nextRange.selectNodeContents(mark);
+        sel.addRange(nextRange);
+      }
+    }
   } else if (action === "formatBlock") {
     document.execCommand("formatBlock", false, button.dataset.richValue || "p");
   } else {
@@ -5573,13 +6227,22 @@ document.addEventListener("change", (event) => {
   const field = event.target.closest("[data-todo-field]");
   if (!field) return;
 
-  const card = field.closest(".todo-card");
-  if (!card) return;
-  const todo = todos.find((item) => item.id === card.dataset.id);
+  const host = field.closest(".todo-card, [data-inspector-todo-id]");
+  const todoId = host?.dataset.id || host?.dataset.inspectorTodoId;
+  if (!todoId) return;
+  const todo = todos.find((item) => item.id === todoId);
   if (!todo) return;
 
   const key = field.dataset.todoField;
-  if (key === "needsReview") {
+  if (key === "title") {
+    const trimmed = field.value.trim();
+    if (!trimmed) {
+      field.value = todo.title;
+      showToast("任务标题不能为空。");
+      return;
+    }
+    todo.title = trimmed;
+  } else if (key === "needsReview") {
     todo.needsReview = field.checked;
   } else if (key === "date") {
     todo.date = field.value || null;
@@ -5591,8 +6254,12 @@ document.addEventListener("change", (event) => {
   renderTodos();
 });
 
+let reviewSearchTimer;
 reviewFilter.addEventListener("change", renderReview);
-reviewSearch.addEventListener("input", renderReview);
+reviewSearch.addEventListener("input", () => {
+  clearTimeout(reviewSearchTimer);
+  reviewSearchTimer = setTimeout(renderReview, 150);
+});
 
 document.addEventListener("click", (event) => {
   const addTime = event.target.closest("#addTimeButton");
@@ -5625,9 +6292,18 @@ document.addEventListener("click", (event) => {
   if (!reminder) return;
 
   if (button.dataset.action === "delete") {
+    const snapshot = { ...reminder };
     markDeleted("reminders", reminder.id);
     reminders = reminders.filter((item) => item.id !== reminder.id);
-    showToast("提醒已删除。");
+    showToast("提醒已删除。", {
+      onUndo: () => {
+        reviveSnapshotFromTombstone("reminders", snapshot);
+        reminders.push(snapshot);
+        saveReminders();
+        render();
+        showToast("已恢复固定提醒。");
+      },
+    });
   }
 
   if (button.dataset.action === "toggle") {
@@ -5918,6 +6594,11 @@ function renderMonthlyChecklist() {
 
   monthlyMonthLabel.textContent = `${formatMonthKey(month)}${month === currentMonth ? "（本月）" : ""}`;
   monthlyProgress.textContent = `已完成 ${doneCount}/${items.length}`;
+  window.dispatchEvent(
+    new CustomEvent("stardust:progress", {
+      detail: { scope: "monthly", done: doneCount, total: items.length },
+    })
+  );
   monthlyEmpty.style.display = items.length ? "none" : "block";
   monthlyOptionsRefresh(groups);
 
@@ -6087,20 +6768,68 @@ monthlyView?.addEventListener("click", (event) => {
     return;
   }
   if (action === "delete") {
-    if (!window.confirm(`确定从月度清单删除「${item.title}」吗？`)) return;
     const now = new Date().toISOString();
     item.deletedAt = now;
     item.updatedAt = now;
     persistAll();
     renderMonthlyChecklist();
-    showToast("已从月度清单删除。");
+    showToast(`已从月度清单删除「${item.title}」。`, {
+      onUndo: () => {
+        item.deletedAt = null;
+        item.updatedAt = new Date().toISOString();
+        persistAll();
+        renderMonthlyChecklist();
+        showToast(`已恢复「${item.title}」。`);
+      },
+    });
   }
 });
 // ---------- 月度清单 end ----------
 
-for (const button of tabButtons) {
+const tabButtonList = Array.from(tabButtons);
+for (const button of tabButtonList) {
   button.addEventListener("click", () => switchTab(button.dataset.tab));
+  button.addEventListener("keydown", (event) => {
+    const idx = tabButtonList.indexOf(button);
+    if (idx < 0) return;
+    let nextIdx = -1;
+    if (event.key === "ArrowRight") nextIdx = (idx + 1) % tabButtonList.length;
+    else if (event.key === "ArrowLeft") nextIdx = (idx - 1 + tabButtonList.length) % tabButtonList.length;
+    else if (event.key === "Home") nextIdx = 0;
+    else if (event.key === "End") nextIdx = tabButtonList.length - 1;
+    if (nextIdx >= 0) {
+      event.preventDefault();
+      const targetBtn = tabButtonList[nextIdx];
+      switchTab(targetBtn.dataset.tab);
+      targetBtn.focus();
+    }
+  });
 }
+
+const saveStatusBadge = document.getElementById("saveStatusBadge");
+if (saveStatusBadge) {
+  const retrySave = () => {
+    if (!saveStatusBadge.classList.contains("is-error")) return;
+    if (fileHydrationFailed && fileRevision === null) {
+      hydrateFromFile();
+      return;
+    }
+    flushFileSave();
+  };
+  saveStatusBadge.addEventListener("click", retrySave);
+  saveStatusBadge.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      retrySave();
+    }
+  });
+}
+
+window.addEventListener("online", () => {
+  if (hasUnsavedLocalChanges() || saveStatusBadge?.classList.contains("is-error")) {
+    flushFileSave();
+  }
+});
 
 // ---------- 切回窗口时从服务器拉最新数据 ----------
 function hasUnsavedLocalChanges() {
@@ -6118,30 +6847,20 @@ function isEditingInsideList() {
 
 function applyServerSnapshot(data) {
   fileRevision = data.savedAt || fileRevision;
-  todos = (data.todos || []).map(normalizeTodo);
-  reminders = (data.reminders || []).map(normalizeReminder);
-  issueDrafts = (data.issueDrafts || []).map(normalizeIssueDraft);
-  memoItems = (data.memoItems || []).map(normalizeMemoItem);
-  projects = (data.projects || []).map(normalizeProject);
-  projectItems = (data.projectItems || []).map(normalizeProjectItem);
-  larkCalendarRecords = (data.larkCalendarRecords || []).map(normalizeLarkCalendarRecord);
-  t46OpenEvents = (data.t46OpenEvents || []).map(normalizeT46OpenEvent);
+  todos = (Array.isArray(data.todos) ? data.todos : []).map(normalizeTodo);
+  reminders = (Array.isArray(data.reminders) ? data.reminders : []).map(normalizeReminder);
+  issueDrafts = (Array.isArray(data.issueDrafts) ? data.issueDrafts : []).map(normalizeIssueDraft);
+  memoItems = (Array.isArray(data.memoItems) ? data.memoItems : []).map(normalizeMemoItem);
+  projects = (Array.isArray(data.projects) ? data.projects : []).map(normalizeProject);
+  projectItems = (Array.isArray(data.projectItems) ? data.projectItems : []).map(normalizeProjectItem);
+  larkCalendarRecords = (Array.isArray(data.larkCalendarRecords) ? data.larkCalendarRecords : []).map(normalizeLarkCalendarRecord);
+  t46OpenEvents = (Array.isArray(data.t46OpenEvents) ? data.t46OpenEvents : []).map(normalizeT46OpenEvent);
   if (Array.isArray(data.monthlyItems)) monthlyItems = data.monthlyItems.map(normalizeMonthlyItem);
   if (data.monthlyChecks && typeof data.monthlyChecks === "object") monthlyChecks = normalizeMonthlyChecks(data.monthlyChecks);
   deletedRecords = mergeDeletedRecords(data.deletedRecords, deletedRecords);
   applyDeletedRecordsToState();
   const migrated = migrateInboxTodosToMemos();
-  localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todos));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reminders));
-  localStorage.setItem(ISSUE_STORAGE_KEY, JSON.stringify(issueDrafts));
-  localStorage.setItem(MEMO_STORAGE_KEY, JSON.stringify(memoItems));
-  localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects));
-  localStorage.setItem(PROJECT_ITEM_STORAGE_KEY, JSON.stringify(projectItems));
-  localStorage.setItem(LARK_CALENDAR_STORAGE_KEY, JSON.stringify(larkCalendarRecords));
-  localStorage.setItem(T46_EVENT_STORAGE_KEY, JSON.stringify(t46OpenEvents));
-  localStorage.setItem(MONTHLY_ITEM_STORAGE_KEY, JSON.stringify(monthlyItems));
-  localStorage.setItem(MONTHLY_CHECK_STORAGE_KEY, JSON.stringify(monthlyChecks));
-  localStorage.setItem(DELETED_RECORDS_STORAGE_KEY, JSON.stringify(deletedRecords));
+  persistLocalCollections();
   renderTodos();
   renderMemoItems();
   renderProjects();
@@ -6158,7 +6877,7 @@ async function refreshFromServerIfIdle() {
   if (hasUnsavedLocalChanges() || isEditingInsideList()) return;
   serverRefreshInFlight = true;
   try {
-    const response = await fetch("/api/data", { cache: "no-store" });
+    const response = await fetchWithTimeout("/api/data", { cache: "no-store" }, 10000);
     if (!response.ok) return;
     const data = await response.json();
     if (!data.savedAt || data.savedAt === fileRevision) return;
