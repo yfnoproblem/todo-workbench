@@ -483,6 +483,9 @@ class TodoHandler(SimpleHTTPRequestHandler):
                                 # It existed on disk until now, so it is being deleted now.
                                 tombstones.setdefault(key, {})[record_id] = deleted_now
                     incoming = payload.get(key, [])
+                    if not isinstance(incoming, list):
+                        data[key] = existing_data.get(key, [])
+                        continue
                     if key == "t46OpenEvents" and not incoming and existing_data.get(key):
                         incoming = existing_data[key]
                     data[key] = (

@@ -3923,7 +3923,7 @@ function makeTodoSection(titleText, items) {
   return group;
 }
 
-function renderTodos() {
+function renderTodos(options = {}) {
   const inboxTodos = todos.filter((todo) => !todo.date);
   const datedTodos = todos.filter((todo) => todo.date);
   const todayKey = toDateKey(new Date());
@@ -3984,7 +3984,9 @@ function renderTodos() {
   }
 
   renderDailyCloseout();
-  renderTodayInspector();
+  if (!options.skipInspector) {
+    renderTodayInspector();
+  }
   renderReview();
 }
 
@@ -6058,6 +6060,7 @@ document.addEventListener("input", (event) => {
     if (!todo) return;
 
     todo[richField.dataset.todoRichField] = sanitizeRichHtml(richField.innerHTML);
+    todo.updatedAt = new Date().toISOString();
     saveTodos();
     renderReview();
     return;
@@ -6083,6 +6086,7 @@ document.addEventListener("input", (event) => {
     } else {
       todo[field.dataset.todoField] = field.value;
     }
+    todo.updatedAt = new Date().toISOString();
     saveTodos();
     renderReview();
   }
@@ -6245,13 +6249,19 @@ document.addEventListener("change", (event) => {
   } else if (key === "needsReview") {
     todo.needsReview = field.checked;
   } else if (key === "date") {
-    todo.date = field.value || null;
+    if (!field.value) {
+      field.value = todo.date || toDateKey(new Date());
+      showToast("日期不能为空，如需暂存请使用「先放这儿」。");
+      return;
+    }
+    todo.date = field.value;
   } else {
     todo[key] = field.value;
   }
 
+  todo.updatedAt = new Date().toISOString();
   saveTodos();
-  renderTodos();
+  renderTodos({ skipInspector: Boolean(host.closest("[data-inspector-todo-id]")) });
 });
 
 let reviewSearchTimer;
@@ -6810,7 +6820,7 @@ const saveStatusBadge = document.getElementById("saveStatusBadge");
 if (saveStatusBadge) {
   const retrySave = () => {
     if (!saveStatusBadge.classList.contains("is-error")) return;
-    if (fileHydrationFailed && fileRevision === null) {
+    if (fileHydrationFailed && fileRevision === null && !hasUnsavedLocalChanges()) {
       hydrateFromFile();
       return;
     }

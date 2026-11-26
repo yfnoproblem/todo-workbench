@@ -614,8 +614,12 @@
 
     document.addEventListener("change", (event) => {
       const target = event.target;
-      if (target && target.matches("input[type='checkbox']") && target.checked) {
-        if (target.closest(".todo-card, .closeout-item, .monthly-item")) {
+      if (
+        target &&
+        target.matches("input[type='checkbox']:not([data-todo-field='needsReview'])") &&
+        target.checked
+      ) {
+        if (target.closest(".todo-card, .closeout-item, .monthly-item, .project-todo-row")) {
           spawnFloatingBalloons(target, resolveAnchorRect(target));
         }
       }

@@ -237,7 +237,12 @@
       if (event.target.closest(".zine-select-trigger, .zine-select-menu, input")) return;
       if (select.hidden || select.classList.contains("is-hidden")) return;
       event.preventDefault();
-      trigger.click();
+      event.stopPropagation();
+      if (inst.isOpen) {
+        closeActiveMenu(true);
+      } else {
+        openMenu(inst);
+      }
     };
     if (parentLabel) {
       parentLabel.addEventListener("click", onParentLabelClick);
@@ -269,6 +274,8 @@
         event.preventDefault();
         event.stopPropagation();
         closeActiveMenu(true);
+      } else if (event.key === "Tab" && inst.isOpen) {
+        closeActiveMenu(false);
       }
     });
 
@@ -321,7 +328,17 @@
   document.addEventListener("click", (event) => {
     if (!activeInstance) return;
     if (activeInstance.wrapper.contains(event.target) || activeInstance.menu.contains(event.target)) return;
+    const label = activeInstance.wrapper.closest("label");
+    if (label && label.contains(event.target) && !event.target.closest("input, textarea, a, button")) return;
     closeActiveMenu(false);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && activeInstance) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeActiveMenu(true);
+    }
   });
 
   window.addEventListener("resize", () => {
